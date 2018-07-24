@@ -43,12 +43,22 @@ INSTALLED_APPS = [
     'authors.apps.authentication',
     'authors.apps.core',
     'authors.apps.profiles',
+    'django_nose',
+    'django_coverage',
 ]
 
+# Use nose to run all tests
+TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
+
+#Tell nose to measure coverage on the 'foo' and 'bar' apps
+NOSE_ARGS = [
+    '--with-coverage',
+    '--cover-package=authors.apps.authentication'
+]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
+    # 'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',

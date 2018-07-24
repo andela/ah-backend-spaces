@@ -63,7 +63,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(db_index=True, unique=True)
 
     # When a user no longer wishes to use our platform, they may try to delete
-    # there account. That's a problem for us because the data we collect is
+    # their account. That's a problem for us because the data we collect is
     # valuable to us and we don't want to delete it. To solve this problem, we
     # will simply offer users a way to deactivate their account instead of
     # letting them delete it. That way they won't show up on the site anymore,
