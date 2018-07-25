@@ -87,7 +87,7 @@ class BaseTest(TestCase):
         Returns: an issued post request to the user registration endpoint
         """
         return self.test_client.post(
-            "/api/users", data=json.dumps(user_details_dict), content_type='application/json')
+            "/api/users/", data=json.dumps(user_details_dict), content_type='application/json')
 
     def login_user(self, user_details_dict):
         """Authenticate the user credentials and login
@@ -98,7 +98,7 @@ class BaseTest(TestCase):
         Returns: an issued post request to the user Authentication endpoint.
         """
         return self.test_client.post(
-            "/api/users/login", data=json.dumps(user_details_dict), content_type='application/json')
+            "/api/users/login/", data=json.dumps(user_details_dict), content_type='application/json')
 
     def fetch_current_user(self, user_token):
         """ Fetch the current logged in user.
@@ -109,7 +109,7 @@ class BaseTest(TestCase):
         Returns: an issued get request to the get current user endpoint.
         """
 
-        return self.test_client.get("/api/user", headers="user_token")
+        return self.test_client.get("/api/user/", headers="user_token")
 
     def tearDown(self):
         pass
@@ -153,7 +153,6 @@ class TestRegistration(BaseTest):
 
         print(response.content)
         self.assertEqual(response.status_code, 400)
-        # self.assertEqual(response.content['message'],"hello")
         self.assertEqual(response.json()['errors']['email'], [
                          u'This field may not be blank.'])
 
@@ -220,30 +219,13 @@ class TestAuthentication(BaseTest):
                          u'This field is required.'])
 
 
-class TestUserRetrieve(BaseTest):
-    """ TestUserRetrieve: tests if a current user is returned """
-
-    def test_current_user_is_retrieved(self):
-        # response = self.fetch_current_user("asdf")
-        # self.assertEqual(response.status_code,200)
-        pass
-
-class TestUserUpdate(BaseTest):
-    """TestUserUpdate: tests if a current user can update their details """
-
-    def test_current_user_update_details(self):
-        """ test if the current logged in user can update details """
-        # response = self.test_client.put("/api/user", headers="user_token", content_type="application/json")
-        # self.assertEqual(response.status_code,200)
-        pass
-
 class TestRouteMethods(BaseTest):
     """ TestRouteMethods: tests the request methods of the endpoint """
 
     def test_can_login_with_put(self):
         """ test if a user can login using a put"""
         response = self.test_client.put(
-            "/api/users/login", data=json.dumps(self.registred_user_to_login), content_type='application/json')
+            "/api/users/login/", data=json.dumps(self.registred_user_to_login), content_type='application/json')
         self.assertEqual(response.status_code, 405)
         self.assertEqual(response.json()['user']
                          ['detail'], u'Method "PUT" not allowed.')
