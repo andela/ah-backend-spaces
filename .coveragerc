@@ -1,7 +1,12 @@
 [report]
+show_missing = True
 omit =
-    */site-packages/*
-    config.py
-    */tests/*
-    */migrations/*
-    
+    */python?.?/*
+    *renderers*
+    *tests*
+    *__init__*
+    *manage*
+    *0001_initial*
+
+
+
