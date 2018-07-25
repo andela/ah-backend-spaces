@@ -1,0 +1,7 @@
+[report]
+omit =
+    */site-packages/*
+    config.py
+    */tests/*
+    */migrations/*
+    
