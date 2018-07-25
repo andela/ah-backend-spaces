@@ -1,8 +1,8 @@
-import jwt
+# import jwt
 
-from datetime import datetime, timedelta
+# from datetime import datetime, timedelta
 
-from django.conf import settings
+# from django.conf import settings
 from django.contrib.auth.models import (
     AbstractBaseUser, BaseUserManager, PermissionsMixin
 )
@@ -55,7 +55,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     # Each `User` needs a human-readable unique identifier that we can use to
     # represent the `User` in the UI. We want to index this column in the
     # database to improve lookup performance.
-    username = models.CharField(db_index=True, max_length=255, unique=True)
+    username = models.CharField(db_index=True, max_length=25, unique=True)
 
     # We also need a way to contact the user and a way for the user to identify
     # themselves when logging in. Since we need an email address for contacting
@@ -64,7 +64,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(db_index=True, unique=True)
 
     # When a user no longer wishes to use our platform, they may try to delete
-    # there account. That's a problem for us because the data we collect is
+    # their account. That's a problem for us because the data we collect is
     # valuable to us and we don't want to delete it. To solve this problem, we
     # will simply offer users a way to deactivate their account instead of
     # letting them delete it. That way they won't show up on the site anymore,
