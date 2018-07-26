@@ -6,7 +6,8 @@ install:
   - pip install -r requirements.txt
 
 script:
-  - python3 manage.py test
+  - python3 manage.py test --settings=authors.settings.test
 
 after_success:
   - coveralls
+
