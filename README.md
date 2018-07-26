@@ -392,5 +392,11 @@ No additional parameters required
 `GET /api/tags`
 
 
+----------
+### Running the Appllication
 
+`python3 manage.py runserver --settings=authors.settings.dev`
 
+### Running tests
+
+`python3 manage.py test --settings=authors.settings.test`
