@@ -1,5 +1,6 @@
 Authors Haven - A Social platform for the creative at heart.
 =======
+
 [![Build Status](https://travis-ci.org/andela/ah-backend-spaces.svg?branch=develop)](https://travis-ci.org/andela/ah-backend-spaces)
 [![Coverage Status](https://coveralls.io/repos/github/andela/ah-backend-spaces/badge.svg?branch=develop)](https://coveralls.io/github/andela/ah-backend-spaces?branch=develop)
 [![Maintainability](https://api.codeclimate.com/v1/badges/96588e5cfb3ba7da70bb/maintainability)](https://codeclimate.com/github/andela/ah-backend-spaces/maintainability)
@@ -403,3 +404,4 @@ No additional parameters required
 ### Running tests
 
 `python3 manage.py test --settings=authors.settings.test`
+
