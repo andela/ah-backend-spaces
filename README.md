@@ -395,6 +395,7 @@ No additional parameters required
 
 `GET /api/tags`
 
+### Running the Authors Haven
 
 ----------
 ### Running the Appllication
