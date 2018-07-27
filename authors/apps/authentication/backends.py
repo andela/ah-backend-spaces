@@ -22,3 +22,9 @@ class JWTAuthentication:
         Check Authenticity of a user token here
         """
         pass
+
+    def authenticate_header(self, var):
+        """
+        Configure JWT Here
+        """
+        pass

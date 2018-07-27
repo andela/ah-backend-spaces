@@ -95,3 +95,4 @@ class TestUser(TestCase):
             username=username, email="testusernames@email.com", is_active=True, is_staff=False)
         user1 = User.objects.get(email="testusernames@email.com")
         self.assertEqual(user1.get_short_name(), username)
+        

@@ -100,7 +100,7 @@ class BaseTest(TestCase):
         return self.test_client.post(
             "/api/users/login/", data=json.dumps(user_details_dict), content_type='application/json')
 
-    def fetch_current_user(self, user_token):
+    def fetch_current_user(self, user_token, headers):
         """ Fetch the current logged in user.
 
         Args:
@@ -109,7 +109,7 @@ class BaseTest(TestCase):
         Returns: an issued get request to the get current user endpoint.
         """
 
-        return self.test_client.get("/api/user/", headers="user_token")
+        return self.test_client.get("/api/user/", headers=headers)
 
     def tearDown(self):
         pass
@@ -217,6 +217,26 @@ class TestAuthentication(BaseTest):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()['errors']['email'], [
                          u'This field is required.'])
+
+
+class TestUserRetrieve(BaseTest):
+    """ TestUserRetrieve: tests if a current user is returned """
+
+    def test_current_user_is_retrieved(self):
+        response = self.fetch_current_user("asdf","fake_token")
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()['user']['detail'],"Authentication credentials were not provided.")
+
+
+class TestUserUpdate(BaseTest):
+    """TestUserUpdate: tests if a current user can update their details """
+
+    def test_current_user_update_details(self):
+        """ test if the current logged in user can update details """
+        response = self.test_client.put(
+            "/api/user/", headers="user_token", content_type="application/json")
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()['user']['detail'],"Authentication credentials were not provided.")
 
 
 class TestRouteMethods(BaseTest):
