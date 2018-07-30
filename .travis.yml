@@ -5,6 +5,9 @@ python:
 install:
   - pip install -r requirements.txt
 
+before_script:
+  - flake8
+
 script:
   - python3 manage.py test --settings=authors.settings.test
 
@@ -13,4 +16,3 @@ after_success:
 
 env:
   - SECRET_KEY='7pgozr2jn7zs_o%i8id6=rddieSECRET_KEY0f0qy3$oy$(8231i^4*@u3'
-

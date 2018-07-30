@@ -2,7 +2,6 @@ from django.test import TestCase
 from ..models import User, UserManager
 
 
-
 class TestUser(TestCase):
     """ Test module for User """
 
@@ -12,7 +11,7 @@ class TestUser(TestCase):
             username="testuser", email="testuser@email.com", is_active=True, is_staff=True)
         User.objects.create(
             username="testuser2", email="testuser2@email.com", is_active=True, is_staff=False)
-        
+
         # test if objects is an instance of UserManager
         self.objects = UserManager()
         self.assertIsInstance(self.objects, UserManager)
@@ -29,7 +28,6 @@ class TestUser(TestCase):
 
         self.assertEqual(user1.get_full_name, "testuser")
         self.assertEqual(user2.get_full_name, "testuser2")
-        
 
     def test_get_short_name(self):
         """ test get_shortname property"""
@@ -38,14 +36,12 @@ class TestUser(TestCase):
         self.assertEqual(user1.get_short_name(), "testuser")
         self.assertEqual(user2.get_short_name(), "testuser2")
 
-
     def test_create_user(self):
         """ test module for successfully creating user"""
         created_user = User.objects.create_user(
             username='testhghguser', email='tesuyuyytuser@email.com')
         created_user2 = User.objects.create_user(
             username='gideon', email='gideon@email.com', password='gideon123')
-
 
         user1 = User.objects.get(email="tesuyuyytuser@email.com")
         user2 = User.objects.get(email="gideon@email.com")
@@ -55,7 +51,6 @@ class TestUser(TestCase):
         self.assertEqual(user1.is_staff, False)
         self.assertEqual(created_user.get_full_name, "testhghguser")
 
-    
     def test_create_super_user(self):
         """ test module for successfully creating super user """
         created_user = User.objects.create_superuser(
@@ -78,7 +73,6 @@ class TestUser(TestCase):
                 username="ssewilliam", email=None)
         self.assertTrue(
             "Users must have an email address." in str(type_error.exception))
-
 
     def test_create_superuser_without_password(self):
         """ test if function 'create_superuser()' can create a super user without the password argument"""

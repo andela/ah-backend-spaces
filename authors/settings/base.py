@@ -19,7 +19,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY')
 
-ALLOWED_HOSTS = ['127.0.0.1','localhost','authorshaven.herokuapp.com']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'authorshaven.herokuapp.com']
 
 # automaticall append slashes
 APPEND_SLASH = True
@@ -84,7 +84,8 @@ TEMPLATES = [
 # https://stackoverflow.com/questions/16868451/how-to-set-up-database-for-django-app-on-heroku
 # https://devcenter.heroku.com/articles/python-concurrency-and-database-connections
 # https://stackoverflow.com/questions/27985368/heroku-databases-is-not-defined
-DATABASES = { 'default': dj_database_url.config(conn_max_age=600, ssl_require=True) }
+DATABASES = {'default': dj_database_url.config(
+    conn_max_age=600, ssl_require=True)}
 
 WSGI_APPLICATION = 'authors.wsgi.application'
 
