@@ -405,3 +405,6 @@ No additional parameters required
 
 `python3 manage.py test --settings=authors.settings.test`
 
+### Application [Staging](https://en.wikipedia.org/wiki/Deployment_environment#Staging) Host Name
+
+`https://authorshaven.herokuapp.com/`
