@@ -8,6 +8,7 @@ https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
 import os
+import dj_database_url
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -16,9 +17,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '7pgozr2jn7zs_o%i8id6=rddie!*0f0qy3$oy$(8231i^4*@u3'
+SECRET_KEY = os.getenv('SECRET_KEY')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1','localhost','authorshaven.herokuapp.com']
 
 # automaticall append slashes
 APPEND_SLASH = True
@@ -78,6 +79,12 @@ TEMPLATES = [
         },
     },
 ]
+
+# using the dj_database_url
+# https://stackoverflow.com/questions/16868451/how-to-set-up-database-for-django-app-on-heroku
+# https://devcenter.heroku.com/articles/python-concurrency-and-database-connections
+# https://stackoverflow.com/questions/27985368/heroku-databases-is-not-defined
+DATABASES = { 'default': dj_database_url.config(conn_max_age=600, ssl_require=True) }
 
 WSGI_APPLICATION = 'authors.wsgi.application'
 
