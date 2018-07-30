@@ -1,0 +1,18 @@
+[flake8]
+
+ignore = F403, F405, F401
+include = 
+    authors/
+
+exclude =
+    .git,
+    __pycache__,
+    docs/source/conf.py,
+    old,
+    build,
+    dist
+    manage.py
+    */migrations/*
+
+max-complexity = 10
+max-line-length = 119

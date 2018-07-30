@@ -92,7 +92,7 @@ class BaseTest(TestCase):
     def login_user(self, user_details_dict):
         """Authenticate the user credentials and login
 
-        Args: 
+        Args:
             user_details_dict: a dictionary with email and password of the user.
 
         Returns: an issued post request to the user Authentication endpoint.
