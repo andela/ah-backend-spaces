@@ -46,11 +46,6 @@ INSTALLED_APPS = [
 # Use nose to run all tests
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
-
-NOSE_ARGS = [
-    '--with-coverage',
-    '--cover-package=authors.apps.authentication'
-]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',

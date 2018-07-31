@@ -1,8 +1,8 @@
-# import jwt
+import jwt
 
-# from datetime import datetime, timedelta
+from datetime import datetime, timedelta
 
-# from django.conf import settings
+from django.conf import settings
 from django.contrib.auth.models import (
     AbstractBaseUser, BaseUserManager, PermissionsMixin
 )
@@ -46,6 +46,7 @@ class UserManager(BaseUserManager):
         user = self.create_user(username, email, password)
         user.is_superuser = True
         user.is_staff = True
+        user.is_account_verfied = True
         user.save()
 
         return user
@@ -84,6 +85,11 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     # More fields required by Django when specifying a custom user model.
 
+    # is_account_verfied
+    # this field shows the status of the account verification.
+    # Users are required to verify their accounts after successful registration
+    is_account_verfied = models.BooleanField(default=False)
+
     # The `USERNAME_FIELD` property tells us which field we will use to log in.
     # In this case, we want that to be the email field.
     USERNAME_FIELD = 'email'
@@ -117,3 +123,25 @@ class User(AbstractBaseUser, PermissionsMixin):
         the user's real name, we return their username instead.
         """
         return self.username
+
+    def _generate_jwt_token(self):
+        """
+        Generate a JSON Web Token that stores this user's ID and has an expiry
+        of 60 days.
+        """
+        dt = datetime.now() + timedelta(days=60)
+
+        token = jwt.encode({
+            'id': self.pk,
+            'exp': int(dt.strftime('%s')),
+            'username': self.username
+        }, settings.SECRET_KEY, algorithm='HS256')
+
+        return token.decode('utf-8')
+
+    @property
+    def token(self):
+        """
+        Allows us to get a user's token by calling `user.token`
+        """
+        return self._generate_jwt_token()
