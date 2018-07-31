@@ -13,7 +13,7 @@ class BaseTest(TestCase):
             'user': {
                 'username': 'Jacobs',
                 'email': 'jake@jake.jake',
-                'password': 'jakejake'
+                'password': 'jakejake@20AA'
             }
         }
         self.user_to_register_with_no_credentials = {
@@ -34,7 +34,7 @@ class BaseTest(TestCase):
         self.registred_user_to_login = {
             "user": {
                 "email": "jake@jake.jake",
-                "password": "jakejake"
+                "password": "jakejake@20AA"
             }
         }
         self.un_registred_user_to_login = {
@@ -72,6 +72,41 @@ class BaseTest(TestCase):
                 "email": "jake@jake.jake",
                 "password": ["jakejake"
                              ]
+            }
+        }
+        self.user_with_weak_password = {
+            "user": {
+                "password": "weak password"
+            }
+        }
+        self.password_less_than_eight = {
+            "user": {
+                "email": "jake@jake21.jake",
+                "password": "w#4Ag^ "
+            }
+        }
+        self.username_less_than_six = {
+            "user": {
+                "email": "jake@jake21.jake",
+                "username": "josh",
+            }
+        }
+        self.user_with_long_username = {
+            "user": {
+                "email": "jake@jake21.jake",
+                "username": "g_" * 13,
+            }
+        }
+        self.password_greater_than_128 = {
+            "user": {
+                "email": "jake@jake21.jake",
+                "password": "j$55AAA^&&" * 30
+            }
+        }
+        self.user_with_non_alpha_username = {
+            "user": {
+                "email": "jake@jake21.jake",
+                "username": "joshua@3334^$"
             }
         }
 
@@ -123,6 +158,9 @@ class TestRegistration(BaseTest):
 
         response = self.user_registered
         self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()[
+                         'user']['message'], 'You were succesfull registered! Please check ' +
+                         self.user_to_register["user"]["email"] + ' for a verification link.')
 
     def test_user_can_duplicate_registration(self):
         """ test if auser can create an acount twice """
@@ -156,6 +194,48 @@ class TestRegistration(BaseTest):
         self.assertEqual(response.json()['errors']['email'], [
                          u'This field may not be blank.'])
 
+    def test_user_signup_weak_password(self):
+        """ test if a user can signup with a weak password """
+        response = self.register_user(
+            self.user_with_weak_password)
+        self.assertEqual(response.json()['errors']['password'], [
+                         "Password should contain a capital letter, numbers and special characters"])
+
+    def test_signup_with_password_less_eight(self):
+        """ test if a user can signup with a password less than 8 """
+        response = self.register_user(
+            self.password_less_than_eight)
+        self.assertEqual(response.json()['errors']['password'], [
+                         'Password cannot be less than 8 characters.'])
+
+    def test_signup_with_long_password(self):
+        """ test if a user can signup with a username longer than 128 """
+        response = self.register_user(
+            self.password_greater_than_128)
+        self.assertEqual(response.json()['errors']['password'], [
+                         'Password cannot be more than 128 characters.'])
+
+    def test_signup_with_short_username(self):
+        """ test if a user can signup with a username less than six characters """
+        response = self.register_user(
+            self.username_less_than_six)
+        self.assertEqual(response.json()['errors']['username'], [
+                         'The username cannot be greater than twenty five or less then five characters.'])
+
+    def test_signup_with_non_alpha_username(self):
+        """ test if a user can signup with a username that is non alphanumeric """
+        response = self.register_user(
+            self.user_with_non_alpha_username)
+        self.assertEqual(response.json()['errors']['username'], [
+                         'Username can only contain _ but not spaces, and other special characters.'])
+
+    def test_username_greater_than_25(self):
+        """ test if a user can signup with a username greater than 25 """
+        response = self.register_user(
+            self.user_with_long_username)
+        self.assertEqual(response.json()['errors']['username'], [
+                         'The username cannot be greater than twenty five or less then five characters.'])
+
 
 class TestAuthentication(BaseTest):
     """ TestAuthentication has tests to ensure that an authentic user can login to the system """
@@ -175,7 +255,7 @@ class TestAuthentication(BaseTest):
         login_response = self.login_user(self.un_registred_user_to_login)
         self.assertEqual(login_response.status_code, 400)
         self.assertEqual(login_response.json()['errors']['error'], [
-                         'A user with this email and password was not found.'])
+                         'The email or password is incorrect.'])
 
     def test_login_without_username(self):
         """ test if a user can login without a username """
@@ -201,7 +281,7 @@ class TestAuthentication(BaseTest):
         login_response = self.login_user(self.wrong_credentials_user_to_login)
         self.assertEqual(login_response.status_code, 400)
         self.assertEqual(login_response.json()['errors']['error'], [
-                         'A user with this email and password was not found.'])
+                         'The email or password is incorrect.'])
 
     def test_invalid_string_user_login(self):
         """ test if a user with invalid characters in their strings can login """
