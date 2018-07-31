@@ -9,8 +9,9 @@ before_script:
   - flake8
 
 script:
-  - python3 manage.py test --settings=authors.settings.test
-
+  - coverage run --source=authors.apps ./manage.py test --settings=authors.settings.test
+  - coverage report
+  
 after_success:
   - coveralls
 

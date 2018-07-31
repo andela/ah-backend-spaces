@@ -1,5 +1,8 @@
 from django.test import TestCase
 from ..models import User, UserManager
+import jwt
+from django.conf import settings
+from datetime import datetime, timedelta
 
 
 class TestUser(TestCase):

@@ -1,6 +1,7 @@
 from django.test import Client
 from django.test import TestCase
 import json
+from ..models import User
 
 
 class BaseTest(TestCase):
@@ -30,11 +31,21 @@ class BaseTest(TestCase):
                 "password": "complex_password"
             }
         }
+
         # users used to login
+        self.email = 'boomboom@gmail.com'
+        self.username = 'boomboom'
+        self.password = 'boompass'
+
+        self.user = User.objects.create_user(
+            self.username, self.email, self.password)
+        self.user.is_account_verfied = True
+        self.user.save()
+
         self.registred_user_to_login = {
             "user": {
-                "email": "jake@jake.jake",
-                "password": "jakejake@20AA"
+                "email": self.email,
+                "password": self.password
             }
         }
         self.un_registred_user_to_login = {
@@ -309,3 +320,45 @@ class TestRouteMethods(BaseTest):
         self.assertEqual(response.status_code, 405)
         self.assertEqual(response.json()['user']
                          ['detail'], u'Method "PUT" not allowed.')
+
+
+class TestUserRetrivalAndUpdate(BaseTest):
+    """
+    class to user retrival and update endpoints
+    """
+
+    def test_update_user(self):
+        """
+        Test to check the user update endpoint
+        """
+
+        self.johndoe = {
+            'user': {
+                'username': "johndoe",
+                'email': "johndoe@mail.com",
+                'password': "johndoespass",
+            }
+        }
+
+        johndoe_user = User.objects.create_user(
+            'johndoe', 'johndoe@mail.com', 'johndoespass')
+        johndoe_user.is_account_verfied = True
+        johndoe_user.save()
+
+        response = self.test_client.post(
+            "/api/users/login/", data=json.dumps(self.johndoe), content_type='application/json')
+        token = response.json()['user']['token']
+
+        headers = {'HTTP_AUTHORIZATION': 'Token ' + token}
+
+        self.nolonger_johndoe = {
+            'user': {
+                'username': 'peterparker',
+                'email': 'peterparker@gmail.com'
+            }
+        }
+
+        response = self.test_client.put(
+            "/api/user/", **headers, data=json.dumps(self.johndoe), content_type='application/json')
+
+        self.assertEqual(response.status_code, 200)
