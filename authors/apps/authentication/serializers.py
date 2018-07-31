@@ -4,17 +4,19 @@ from rest_framework import serializers
 
 from .models import User
 
+import re
+
 
 class RegistrationSerializer(serializers.ModelSerializer):
     """Serializers registration requests and creates a new user."""
 
-    # Ensure passwords are at least 8 characters long, no longer than 128
     # characters, and can not be read by the client.
     password = serializers.CharField(
-        max_length=128,
-        min_length=8,
         write_only=True
     )
+    # make sure email os of email length
+    email = serializers.EmailField()
+    username = serializers.CharField()
 
     # The client should not be able to send a token along with a registration
     # request. Making `token` read-only handles that for us.
@@ -23,7 +25,52 @@ class RegistrationSerializer(serializers.ModelSerializer):
         model = User
         # List all of the fields that could possibly be included in a request
         # or response, including fields specified explicitly above.
+        # return a success message on succeesful registration
         fields = ['email', 'username', 'password']
+
+    # https://stackoverflow.com/questions/29813463/django-rest-framework-email-validation
+    def validate_email(self, email_var):
+        # Check if email address is already in use by another user
+        db_email = User.objects.filter(email=email_var)
+        if db_email.exists():
+            raise serializers.ValidationError(
+                "The email address you have used is already registered.")
+        else:
+            return email_var
+
+    # https://stackoverflow.com/questions/29813463/django-rest-framework-email-validation
+    def validate_username(self, username_var):
+        # check if user name already exists in the database
+        # check if username is between 6 to 255 chracters
+        # make sure username can only contain underscore characters included with alphanumeric characters
+        db_username = User.objects.filter(username=username_var)
+        if len(username_var) >= 25 or len(username_var) < 5:
+            raise serializers.ValidationError(
+                "The username cannot be greater than twenty five or less then five characters.")
+        elif not re.match("^[A-Za-z0-9_-]*$", username_var):
+            raise serializers.ValidationError(
+                "Username can only contain _ but not spaces, and other special characters.")
+        elif db_username.exists():
+            raise serializers.ValidationError(
+                "The username you have used is already taken.")
+        else:
+            return username_var
+
+    # https://stackoverflow.com/questions/29813463/django-rest-framework-email-validation
+    def validate_password(self, password_var):
+        # Check if password is is between 8 to 128 characters
+        # check if password contains upper case letters, numbers and special characters
+        if len(password_var) < 8:
+            raise serializers.ValidationError(
+                "Password cannot be less than 8 characters.")
+        elif len(password_var) >= 128:
+            raise serializers.ValidationError(
+                "Password cannot be more than 128 characters.")
+        elif password_var.isalnum() or re.search('[0-9]|[A-Z]', password_var) is None:
+            raise serializers.ValidationError(
+                "Password should contain a capital letter, numbers and special characters")
+        else:
+            return password_var
 
     def create(self, validated_data):
         # Use the `create_user` method we wrote earlier to create a new user.
@@ -68,7 +115,7 @@ class LoginSerializer(serializers.Serializer):
         # `authenticate` will return `None`. Raise an exception in this case.
         if user is None:
             raise serializers.ValidationError(
-                'A user with this email and password was not found.'
+                'The email or password is incorrect.'
             )
 
         # Django provides a flag on our `User` model called `is_active`. The

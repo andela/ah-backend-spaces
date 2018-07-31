@@ -25,8 +25,9 @@ class RegistrationAPIView(APIView):
         serializer = self.serializer_class(data=user)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        message = {"message": "You were succesfull registered! Please check " +
+                   serializer.data["email"] + " for a verification link."}
+        return Response(message, status=status.HTTP_201_CREATED)
 
 
 class LoginAPIView(APIView):
