@@ -9,7 +9,6 @@ omit =
     */migrations/*
     *manage*
     *0001_initial*
-    */serializers.py*
 
 show_missing = True
 
