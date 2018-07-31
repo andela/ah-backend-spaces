@@ -199,7 +199,7 @@ class TestRegistration(BaseTest):
         response = self.register_user(
             self.user_with_weak_password)
         self.assertEqual(response.json()['errors']['password'], [
-                         "Password should contain a capital letter, numbers and special characters"])
+                         "Password must at least contain a capital letter or number and special character."])
 
     def test_signup_with_password_less_eight(self):
         """ test if a user can signup with a password less than 8 """
@@ -220,21 +220,21 @@ class TestRegistration(BaseTest):
         response = self.register_user(
             self.username_less_than_six)
         self.assertEqual(response.json()['errors']['username'], [
-                         'The username cannot be greater than twenty five or less then five characters.'])
+                         'The username can only be between 5 to 25 characters.'])
 
     def test_signup_with_non_alpha_username(self):
         """ test if a user can signup with a username that is non alphanumeric """
         response = self.register_user(
             self.user_with_non_alpha_username)
         self.assertEqual(response.json()['errors']['username'], [
-                         'Username can only contain _ but not spaces, and other special characters.'])
+                         'Username only takes letters, numbers, and underscores.'])
 
     def test_username_greater_than_25(self):
         """ test if a user can signup with a username greater than 25 """
         response = self.register_user(
             self.user_with_long_username)
         self.assertEqual(response.json()['errors']['username'], [
-                         'The username cannot be greater than twenty five or less then five characters.'])
+                         'The username can only be between 5 to 25 characters.'])
 
 
 class TestAuthentication(BaseTest):

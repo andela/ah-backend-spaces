@@ -46,10 +46,10 @@ class RegistrationSerializer(serializers.ModelSerializer):
         db_username = User.objects.filter(username=username_var)
         if len(username_var) >= 25 or len(username_var) < 5:
             raise serializers.ValidationError(
-                "The username cannot be greater than twenty five or less then five characters.")
-        elif not re.match("^[A-Za-z0-9_-]*$", username_var):
+                "The username can only be between 5 to 25 characters.")
+        elif not re.match("^[A-Za-z0-9_]*$", username_var):
             raise serializers.ValidationError(
-                "Username can only contain _ but not spaces, and other special characters.")
+                "Username only takes letters, numbers, and underscores.")
         elif db_username.exists():
             raise serializers.ValidationError(
                 "The username you have used is already taken.")
@@ -68,7 +68,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
                 "Password cannot be more than 128 characters.")
         elif password_var.isalnum() or re.search('[0-9]|[A-Z]', password_var) is None:
             raise serializers.ValidationError(
-                "Password should contain a capital letter, numbers and special characters")
+                "Password must at least contain a capital letter or number and special character.")
         else:
             return password_var
 
