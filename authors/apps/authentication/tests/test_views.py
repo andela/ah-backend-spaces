@@ -3,6 +3,7 @@ from django.test import TestCase
 import json
 import os
 from ..models import User
+from ...email.email import TokenGenerator
 
 
 class BaseTest(TestCase):
@@ -10,26 +11,30 @@ class BaseTest(TestCase):
     def setUp(self):
         """ automatically run the function before running other tests"""
         self.test_client = Client()
+        self.token_class = TokenGenerator()
         # users used to register
         self.user_to_register = {
             'user': {
                 'username': 'Aurthurs',
                 'email': 'haven.authors@gmail.com',
-                'password': 'jakejake@20AA'
+                'password': 'jakejake@20AA',
+                'callbackurl': 'https://example.com'
             }
         }
         self.user_to_register_with_no_credentials = {
             "user": {
                 "username": "",
                 "email": "",
-                "password": ""
+                "password": "",
+                'callbackurl': 'https://example.com'
             }
         }
         self.user_to_register_with_invalid_email = {
             "user": {
                 "username": "johns",
                 "email": "",
-                "password": "complex_password"
+                "password": "complex_password",
+                'callbackurl': 'https://example.com'
             }
         }
 
@@ -143,6 +148,23 @@ class BaseTest(TestCase):
         self.user_registered = self.register_user(self.user_to_register)
         self.user_logged_in = self.login_user(self.registred_user_to_login)
 
+        # Make a token to send to the registered user, token to be used
+        # in verifying the registred user
+        registered_user_data = {
+            'username': self.username,
+            'email': self.email,
+            'callbackurl': 'https://example.com'
+        }
+
+        self.encorded_token = self.token_class.make_custom_token(
+            registered_user_data)
+
+        # Use to check if an unregistred username can verify account.Here we
+        # change just the username to the new name we want to use.
+        registered_user_data['username'] = "un_registred_username"
+        self.encorded_invalid_uname = self.token_class.make_custom_token(
+            registered_user_data)
+
     def register_user(self, user_details_dict):
         """ Register anew user to the system
 
@@ -175,6 +197,16 @@ class BaseTest(TestCase):
         """
 
         return self.test_client.get("/api/user/", headers="user_token")
+
+    def verify_user_account(self, user_token):
+        """ Verify a user who wants to get their account verified.
+
+        Args:
+            user_token: a unique generated encrypted code that has user details.
+
+        Returns: an issued get request to the verify user endpoint.
+        """
+        return self.test_client.get("/api/activate/{}".format(user_token))
 
     def tearDown(self):
         pass
@@ -285,6 +317,74 @@ class TestRegistration(BaseTest):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()['errors']['auth_token'], [
                          'The token is either invalid or expired. Please login again.'])
+
+
+class TestAccountVerification(BaseTest):
+    """ TestAccountVerification has tests to ensure that an authentic user can verify their account"""
+
+    def test_user_can_verify_account(self):
+        """test if a user can verify their account"""
+
+        # Create a new user
+        self.register_user(self.user_to_register)
+
+        # Grab only the relevant items and generate the token
+        user_to_register = self.user_to_register['user']
+        user_to_register.pop('password')
+        encoded_token = self.token_class.make_custom_token(user_to_register)
+
+        # Verify user
+        user_verify_account = self.verify_user_account(encoded_token)
+        self.assertEqual(user_verify_account.status_code, 302)
+
+        # Login the same user
+        self.user_to_register['user']['password'] = 'jakejake@20AA'
+        verifired_user_login = self.login_user(self.user_to_register)
+        self.assertEqual(verifired_user_login.status_code, 200)
+
+    def test_user_can_verify_already_account_verified(self):
+        """test a user can verify a verified account"""
+        verified_account = self.verify_user_account(
+            self.encorded_token)
+        self.assertEqual(verified_account.status_code, 400)
+        self.assertEqual(verified_account.json()[
+                         'errors']['username'], 'The account is already verified.')
+
+    def test_user_verify_with_fake_token(self):
+        """test if a user can verify account with a fake token"""
+        user_verify_account = self.verify_user_account(
+            self.encorded_token + "ehwfv")
+        self.assertEqual(user_verify_account.status_code, 400)
+        self.assertEqual(user_verify_account.json()[
+                         'token'], "token is invalid")
+
+    def test_un_registered_username_verify_account(self):
+        """test if un registered username can verify their account"""
+        user_verify_account = self.verify_user_account(
+            self.encorded_invalid_uname)
+        self.assertEqual(user_verify_account.status_code, 400)
+        self.assertEqual(user_verify_account.json()['errors'][
+                         'username'], "This user does not exist.")
+
+    def test_un_named_username_verify_account(self):
+        """test if an un-named username can verify their account"""
+
+        # Use to check if a token with out a username can verify account.Here we
+        # change just the remove the usename key from the dictionary.
+        registered_user_data = {
+            'username': self.username,
+            'email': self.email,
+            'callbackurl': 'https://example.com'
+        }
+        registered_user_data.pop('username')
+        no_username_invalid_uname = self.token_class.make_custom_token(
+            registered_user_data)
+
+        user_verify_account = self.verify_user_account(
+            no_username_invalid_uname)
+        self.assertEqual(user_verify_account.status_code, 400)
+        self.assertEqual(user_verify_account.json()['errors'][
+                         'token'], "The token is either invalid. Please login to continue.")
 
 
 class TestAuthentication(BaseTest):

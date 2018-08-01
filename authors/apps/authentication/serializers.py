@@ -1,5 +1,6 @@
 from django.contrib.auth import authenticate
-
+from django.core.validators import URLValidator
+# from django.core.validators import ValidationError
 from rest_framework import serializers
 
 from .models import User
@@ -19,10 +20,11 @@ class RegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True
     )
+    callbackurl = serializers.URLField(write_only=True)
+
     # make sure email os of email length
     email = serializers.EmailField()
     username = serializers.CharField()
-
     # The client should not be able to send a token along with a registration
     # request. Making `token` read-only handles that for us.
 
@@ -31,7 +33,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
         # List all of the fields that could possibly be included in a request
         # or response, including fields specified explicitly above.
         # return a success message on succeesful registration
-        fields = ['email', 'username', 'password']
+        fields = ['email', 'username', 'password', 'callbackurl']
 
     # https://stackoverflow.com/questions/29813463/django-rest-framework-email-validation
     def validate_email(self, email_var):
@@ -80,8 +82,20 @@ class RegistrationSerializer(serializers.ModelSerializer):
         else:
             return password_var
 
+    # https://stackoverflow.com/questions/7160737/python-how-to-validate-a-url-in-python-malformed-or-not
+    def validate_callbackurl(self, url_var):
+        # verify that the url that was passed is a valid url.
+
+        if not URLValidator(url_var):
+            raise serializers.ValidationError('the url is not a valid')
+        else:
+            return url_var
+
     def create(self, validated_data):
         # Use the `create_user` method we wrote earlier to create a new user.
+        # But take remove the callbackurl as its not required by the
+        # create_user function.
+        validated_data.pop('callbackurl')
         return User.objects.create_user(**validated_data)
 
 
@@ -310,3 +324,35 @@ class FacebookSocialAuthAPIViewSerializer(serializers.Serializer):
             auth = authenticate(
                 email=user_info['email'], password="jndhbcdhbch")
             return auth.token
+
+
+class VerificationSerializer(serializers.Serializer):
+    """Serialises verification requests and verifys the user."""
+
+    def verify_user(self, data):
+        # check if the token data has a username key, and raise an error
+        # if it doesnot exist.
+        if 'username' not in data:
+            raise serializers.ValidationError(
+                {'token': 'The token is either invalid. Please login to continue.'}
+            )
+        # The `verify_user` method is where the update actually occurs.Here, we
+        # check if the user exists in the system.If the user does exist we go
+        # ahead and verify that user's account and raise an error if they
+        # do not exist or if the account has already been verified.
+        user = User.objects.filter(
+            username=data['username']).values('is_verified')
+        if not user.exists():
+            raise serializers.ValidationError(
+                {'username': 'This user does not exist.'}
+            )
+        elif user[0]['is_verified'] is True:
+            raise serializers.ValidationError(
+                {'username': 'The account is already verified.'}
+            )
+        else:
+            user.update(is_verified=True)
+
+        return {
+            'user': 'Your account is verified, continue to login'
+        }
