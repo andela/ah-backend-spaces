@@ -46,7 +46,7 @@ class UserManager(BaseUserManager):
         user = self.create_user(username, email, password)
         user.is_superuser = True
         user.is_staff = True
-        user.is_account_verfied = True
+        user.is_verified = True
         user.save()
 
         return user
@@ -77,18 +77,16 @@ class User(AbstractBaseUser, PermissionsMixin):
     # falsed.
     is_staff = models.BooleanField(default=False)
 
+    # The `is_verified` flag is expected by our platform to determine whether
+    # a user has verified their email address.Users can only login if this is
+    # true
+    is_verified = models.BooleanField(default=False)
+
     # A timestamp representing when this object was created.
     created_at = models.DateTimeField(auto_now_add=True)
 
     # A timestamp reprensenting when this object was last updated.
     updated_at = models.DateTimeField(auto_now=True)
-
-    # More fields required by Django when specifying a custom user model.
-
-    # is_account_verfied
-    # this field shows the status of the account verification.
-    # Users are required to verify their accounts after successful registration
-    is_account_verfied = models.BooleanField(default=False)
 
     # The `USERNAME_FIELD` property tells us which field we will use to log in.
     # In this case, we want that to be the email field.
