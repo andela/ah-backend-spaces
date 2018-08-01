@@ -12,8 +12,8 @@ class BaseTest(TestCase):
         # users used to register
         self.user_to_register = {
             'user': {
-                'username': 'Jacobs',
-                'email': 'jake@jake.jake',
+                'username': 'Aurthurs',
+                'email': 'haven.authors@gmail.com',
                 'password': 'jakejake@20AA'
             }
         }
@@ -39,7 +39,7 @@ class BaseTest(TestCase):
 
         self.user = User.objects.create_user(
             self.username, self.email, self.password)
-        self.user.is_account_verfied = True
+        self.user.is_verified = True
         self.user.save()
 
         self.registred_user_to_login = {
@@ -342,7 +342,7 @@ class TestUserRetrivalAndUpdate(BaseTest):
 
         johndoe_user = User.objects.create_user(
             'johndoe', 'johndoe@mail.com', 'johndoespass')
-        johndoe_user.is_account_verfied = True
+        johndoe_user.is_verified = True
         johndoe_user.save()
 
         response = self.test_client.post(
