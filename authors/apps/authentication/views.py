@@ -1,3 +1,5 @@
+from django.http import HttpResponseRedirect
+
 from rest_framework import status
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -7,7 +9,8 @@ from rest_framework.views import APIView
 from .renderers import UserJSONRenderer
 from .serializers import (
     LoginSerializer, RegistrationSerializer, UserSerializer,
-    GoogleSocialAuthAPIViewSerializer, FacebookSocialAuthAPIViewSerializer
+    GoogleSocialAuthAPIViewSerializer, FacebookSocialAuthAPIViewSerializer,
+    VerificationSerializer
 )
 from ..email.email import Mailer, TokenGenerator, datetime, timedelta, os
 
@@ -37,13 +40,11 @@ class RegistrationAPIView(APIView):
         # Prepare to generate a token to be used in verifying that the user
         # `call_back_url` is the url that should be redirected to after
         # verifying the user.
-
-        expiration_time = datetime.now() + timedelta(days=60)
+        callback = {'url': user['callbackurl']}
         user_data = {
             'username': serializer.data['username'],
             'email': serializer.data['email'],
-            'exp': int(expiration_time.strftime('%s')),
-            'call_back_url': os.getenv('CALL_BACK_URL')
+            'callbackurl': callback['url'],
         }
 
         # username to render in the verify email template
@@ -139,3 +140,27 @@ class FacebookSocialAuthAPIView(APIView):
         # serializer.save()
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class VerifyAPIView(APIView):
+    permission_classes = (AllowAny,)
+    serializer_class = VerificationSerializer
+    token_class = TokenGenerator()
+
+    def get(self, request, token):
+        decoded_token = self.token_class.decode_token(token)
+
+        if not isinstance(decoded_token, dict):
+            return Response({'token': 'token is invalid'}, status=status.HTTP_400_BAD_REQUEST)
+        # We call the `serializer.update()` so as to update the data
+        # If serializer.data returns an empty dictionary then user
+        # is successfully registred else return data from the serializer.
+        # Basically, a user can only verify their account once.
+
+        serializer = self.serializer_class(data=decoded_token)
+        serializer.is_valid(raise_exception=True)
+        serializer.verify_user(decoded_token)
+
+        if bool(serializer.data) is False:
+            return HttpResponseRedirect(decoded_token['callbackurl'])
+        return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)

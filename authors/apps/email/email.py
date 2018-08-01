@@ -34,8 +34,10 @@ class TokenGenerator:
 
         Returns: returns a dictionary with decoded values
         """
-
-        return jwt.decode(token, settings.SECRET_KEY, algorithm='HS256')
+        try:
+            return jwt.decode(token, settings.SECRET_KEY, algorithm='HS256')
+        except Exception:
+            return "invalid token"
 
 
 class Mailer:
