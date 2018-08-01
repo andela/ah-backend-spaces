@@ -20,7 +20,7 @@ class TestJWT(TestCase):
             self.username, self.email, self.password)
 
         # verify a user's account and save
-        self.user.is_account_verfied = True
+        self.user.is_verified = True
         self.user.save()
 
         self.data = {
