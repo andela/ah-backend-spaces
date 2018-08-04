@@ -8,6 +8,9 @@ import re
 
 from ..email.email import Mailer
 
+# from .social_auth.google import google_auth
+from .social_auth import google, facebook_auth
+
 
 class RegistrationSerializer(serializers.ModelSerializer):
     """Serializers registration requests and creates a new user."""
@@ -201,3 +204,109 @@ class UserSerializer(serializers.ModelSerializer):
         instance.save()
 
         return instance
+
+
+class GoogleSocialAuthAPIViewSerializer(serializers.Serializer):
+    """ Handles all social auth related tasks from google """
+
+    # get google authentication token from and do validations
+    auth_token = serializers.CharField()
+
+    def validate_auth_token(self, auth_token):
+
+        # create an instance of the google social auth lib and validate token
+        user_info = google.google_auth.validate(auth_token)
+
+        # check if google managed to decode token
+        # this is by checking if key sub exists
+        try:
+            user_info['sub']
+        except:  # noqa: E722
+            msg = 'The token is either invalid or expired. Please login again.'
+            raise serializers.ValidationError(
+                msg
+            )
+
+        # check if the user id fron decoded token exists in the decoded token dict
+        user = User.objects.filter(social_id=user_info['sub'])
+
+        # if user does not exist, register the user into the database.
+        # i.e. create a new user
+        if not user.exists():
+            user = {
+                'username': user_info['name'], 'email': user_info['email'], 'password': 'jndhbcdhbch'}
+            try:
+                User.objects.create_user(**user)
+            except:  # noqa: E722
+                msg = 'User with email ' + \
+                    user_info['email'] + ' aleady exists.'
+                raise serializers.ValidationError(
+                    msg
+                )
+            User.objects.filter(email=user_info['email']).update(
+                social_id=user_info['sub'])
+            auth = authenticate(
+                email=user_info['email'], password="jndhbcdhbch")
+            return {
+                auth.token
+            }
+        else:
+            # if user already exists and is authenticated by google also,
+            # return the user an authentication token
+            auth = authenticate(
+                email=user_info['email'], password="jndhbcdhbch")
+            return auth.token
+
+
+class FacebookSocialAuthAPIViewSerializer(serializers.Serializer):
+    """ Handles all social auth related tasks from google """
+
+    # get google authentication token from and do validations
+    auth_token = serializers.CharField()
+
+    def validate_auth_token(self, auth_token):
+
+        # create an instance of the google social auth lib and validate token
+        user_info = facebook_auth.FacebookValidate.validate(auth_token)
+
+        # check if google managed to decode token
+        # this is by checking if key sub exists
+        try:
+            user_info['id']
+        except:  # noqa: E722
+            msg = 'The token is either invalid or expired. Please login again.'
+            raise serializers.ValidationError(
+                msg
+            )
+
+        # check if the user id fron decoded token exists in the decoded token dict
+        user = User.objects.filter(social_id=user_info['id'])
+
+        # if user does not exist, register the user into the database.
+        # i.e. create a new user
+        if not user.exists():
+            user = {
+                'username': user_info['name'], 'email': user_info['email'], 'password': 'jndhbcdhbch'}
+
+            # create a new facebook user
+            try:
+                User.objects.create_user(**user)
+            except:  # noqa: E722
+                msg = 'User with email ' + \
+                    user_info['email'] + ' aleady exists.'
+                raise serializers.ValidationError(
+                    msg
+                )
+            User.objects.filter(email=user_info['email']).update(
+                social_id=user_info['id'])
+            auth = authenticate(
+                email=user_info['email'], password="jndhbcdhbch")
+            return {
+                auth.token
+            }
+        else:
+            # if user already exists and is authenticated by google also,
+            # return the user an authentication token
+            auth = authenticate(
+                email=user_info['email'], password="jndhbcdhbch")
+            return auth.token

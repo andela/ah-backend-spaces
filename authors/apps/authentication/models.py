@@ -88,6 +88,16 @@ class User(AbstractBaseUser, PermissionsMixin):
     # A timestamp reprensenting when this object was last updated.
     updated_at = models.DateTimeField(auto_now=True)
 
+    # More fields required by Django when specifying a custom user model.
+
+    # is_account_verfied
+    # this field shows the status of the account verification.
+    # Users are required to verify their accounts after successful registration
+    is_account_verfied = models.BooleanField(default=False)
+
+    # user social ID
+    social_id = models.CharField(db_index=True, max_length=255)
+
     # The `USERNAME_FIELD` property tells us which field we will use to log in.
     # In this case, we want that to be the email field.
     USERNAME_FIELD = 'email'

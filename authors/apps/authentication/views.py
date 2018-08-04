@@ -6,7 +6,8 @@ from rest_framework.views import APIView
 
 from .renderers import UserJSONRenderer
 from .serializers import (
-    LoginSerializer, RegistrationSerializer, UserSerializer
+    LoginSerializer, RegistrationSerializer, UserSerializer,
+    GoogleSocialAuthAPIViewSerializer, FacebookSocialAuthAPIViewSerializer
 )
 from ..email.email import Mailer, TokenGenerator, datetime, timedelta, os
 
@@ -102,5 +103,39 @@ class UserRetrieveUpdateAPIView(RetrieveUpdateAPIView):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class GoogleSocialAuthAPIView(APIView):
+    permission_classes = (AllowAny,)
+    renderer_classes = (UserJSONRenderer,)
+    serializer_class = GoogleSocialAuthAPIViewSerializer
+
+    def post(self, request):
+        user = request.data.get('user', {})
+
+        # pass data to serializer
+        serializer = self.serializer_class(data=user)
+        serializer.is_valid(raise_exception=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class FacebookSocialAuthAPIView(APIView):
+    permission_classes = (AllowAny,)
+    renderer_classes = (UserJSONRenderer,)
+    serializer_class = FacebookSocialAuthAPIViewSerializer
+
+    def post(self, request):
+        user = request.data.get('user', {})
+
+        # Notice here that we do not call `serializer.save()` like we did for
+        # the registration endpoint. This is because we don't actually have
+        # anything to save. Instead, the `validate` method on our serializer
+        # handles everything we need.
+        serializer = self.serializer_class(data=user)
+        serializer.is_valid(raise_exception=True)
+        # serializer.save()
 
         return Response(serializer.data, status=status.HTTP_200_OK)

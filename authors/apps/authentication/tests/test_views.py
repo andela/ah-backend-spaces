@@ -1,6 +1,7 @@
 from django.test import Client
 from django.test import TestCase
 import json
+import os
 from ..models import User
 
 
@@ -118,6 +119,24 @@ class BaseTest(TestCase):
             "user": {
                 "email": "jake@jake21.jake",
                 "username": "joshua@3334^$"
+            }
+        }
+
+        self.user_with_invalid_social_token = {
+            "user": {
+                "auth_token": "fake_fb_twitter_or_google_token"
+            }
+        }
+
+        self.facebook_debug_token = {
+            "user": {
+                "auth_token": os.getenv('FACEBOOK_DEBUG_TOKEN')
+            }
+        }
+
+        self.google_debug_token = {
+            "user": {
+                "auth_token": os.getenv('GOOGLE_DEBUG_TOKEN')
             }
         }
 
@@ -247,6 +266,26 @@ class TestRegistration(BaseTest):
         self.assertEqual(response.json()['errors']['username'], [
                          'The username can only be between 5 to 25 characters.'])
 
+    def test_signup_with_invalid_fb_token(self):
+        """ test if a user can signup with wrong facebook token """
+
+        response = self.test_client.post(
+            "/api/auth/facebook/", data=json.dumps(
+                self.user_with_invalid_social_token), content_type='application/json')
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()['errors']['auth_token'], [
+                         'The token is either invalid or expired. Please login again.'])
+
+    def test_signup_with_invalid_google_token(self):
+        """ test if a user can signup with wrong google token """
+
+        response = self.test_client.post(
+            "/api/auth/google/", data=json.dumps(
+                self.user_with_invalid_social_token), content_type='application/json')
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()['errors']['auth_token'], [
+                         'The token is either invalid or expired. Please login again.'])
+
 
 class TestAuthentication(BaseTest):
     """ TestAuthentication has tests to ensure that an authentic user can login to the system """
@@ -308,6 +347,22 @@ class TestAuthentication(BaseTest):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()['errors']['email'], [
                          u'This field is required.'])
+
+    def test_facebook_login(self):
+        """ test if social login is possible with facebook token """
+        response = self.test_client.post(
+            "/api/auth/facebook/", data=json.dumps(self.facebook_debug_token), content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+
+    def test_facebook_signin_after_registration(self):
+        """ test if facebook login is possible when user is already registered """
+        response1 = self.test_client.post(
+            "/api/auth/facebook/", data=json.dumps(self.facebook_debug_token), content_type='application/json')
+        self.assertEqual(response1.status_code, 200)
+
+        response2 = self.test_client.post(
+            "/api/auth/facebook/", data=json.dumps(self.facebook_debug_token), content_type='application/json')
+        self.assertEqual(response2.status_code, 200)
 
 
 class TestRouteMethods(BaseTest):
