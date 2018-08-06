@@ -10,9 +10,10 @@ from .renderers import UserJSONRenderer
 from .serializers import (
     LoginSerializer, RegistrationSerializer, UserSerializer,
     GoogleSocialAuthAPIViewSerializer, FacebookSocialAuthAPIViewSerializer,
-    VerificationSerializer
+    VerificationSerializer, ResetPasswordSerializer, UpdatePasswordSerializer
 )
 from ..email.email import Mailer, TokenGenerator, datetime, timedelta, os
+from .models import User
 
 
 class RegistrationAPIView(APIView):
@@ -121,6 +122,74 @@ class GoogleSocialAuthAPIView(APIView):
         serializer.is_valid(raise_exception=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ResetPasswordAPIView(APIView):
+    permission_classes = (AllowAny,)
+    renderer_classes = (UserJSONRenderer,)
+    serializer_class = ResetPasswordSerializer
+    send_user_email = Mailer()
+    token_class = TokenGenerator()
+
+    def post(self, request):
+        user = request.data.get('user', {})
+        # The create serializer, validate serializer, save serializer pattern
+        # below is common and you will see it a lot throughout this course and
+        # your own work later on. Get familiar with it.
+        serializer = self.serializer_class(data=user)
+        serializer.is_valid(raise_exception=True)
+
+        # These are the values about the user that we need to send an email
+        subject = "Reset password"
+        template_name = 'reset_password.html'
+
+        expiration_time = datetime.now() + timedelta(minutes=30)
+
+        callback = {'url': user['callbackurl']}
+        user_data = {
+            'username': serializer.data['username'],
+            'email': serializer.data['email'],
+            'exp': int(expiration_time.strftime('%s'))
+        }
+
+        context = {
+            'username': serializer.data['username'],
+            'callbackurl': callback['url'],
+            'token': self.token_class.make_custom_token(user_data)
+        }
+
+        # send the user an email on successful registration
+        self.send_user_email.send(
+            serializer.data, subject, template_name, context)
+
+        message = {"message": "A password reset link has been sent " +
+                   user["email"] + ", please check your email"}
+        return Response(message, status=status.HTTP_200_OK)
+
+
+class UpdatePasswordAPIView(APIView):
+    permission_classes = (AllowAny,)
+    # renderer_classes = (UserJSONRenderer,)
+    serializer_class = UpdatePasswordSerializer
+    token_class = TokenGenerator()
+
+    def post(self, request, token):
+        new_password_data = request.data.get('user', {})
+
+        decoded_token = self.token_class.decode_token(token)
+
+        if not isinstance(decoded_token, dict):
+            return Response({'token': 'token is invalid'}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = self.serializer_class(data=decoded_token)
+        serializer.validate_password(new_password_data['new_password'])
+        serializer.is_valid(raise_exception=True)
+
+        user = User.objects.get(username=decoded_token['username'])
+        user.set_password(new_password_data['new_password'])
+        user.save()
+        message = {"message": "Password has been successfully reset"}
+        return Response(message, status=status.HTTP_200_OK)
 
 
 class FacebookSocialAuthAPIView(APIView):

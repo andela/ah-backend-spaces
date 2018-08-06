@@ -1,7 +1,7 @@
 from django.contrib.auth import authenticate
 from django.core.validators import URLValidator
-# from django.core.validators import ValidationError
-from rest_framework import serializers
+
+from rest_framework import serializers, exceptions
 
 from .models import User
 
@@ -356,3 +356,82 @@ class VerificationSerializer(serializers.Serializer):
         return {
             'user': 'Your account is verified, continue to login'
         }
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    """
+    ResestPasword serializer class
+    """
+    email = serializers.CharField(required=True)
+    username = serializers.CharField(max_length=255, read_only=True)
+    callbackurl = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        email = data.get('email', None)
+        callbackurl = data.get('callbackurl', None)
+
+        if email is None:
+            raise serializers.ValidationError(
+                'An email address is required to log in.'
+            )
+
+        if callbackurl is None:
+            raise serializers.ValidationError(
+                'A call backurl is required.'
+            )
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            msg = 'No user matching this email'
+            raise exceptions.AuthenticationFailed(msg)
+
+        # If no user was found matching this email/password combination then
+        # `authenticate` will return `None`. Raise an exception in this case.
+
+        if not user.is_active:
+            raise serializers.ValidationError(
+                'This user has been deactivated.'
+            )
+        return {
+            'username': user.username,
+            'email': user.email
+        }
+
+
+class UpdatePasswordSerializer(serializers.Serializer):
+    """Update passseord serializer"""
+
+    def validate_data(self, data):
+        # check if the token data has a username key, and raise an error
+        # if it doesnot exist.
+        if 'username' not in data:
+            raise serializers.ValidationError(
+                {'token': 'The token is invalid'}
+            )
+
+        user = User.objects.get(username=data['username'])
+        if user is None:
+            raise serializers.ValidationError(
+                {'error': 'This user does not exist.'}
+            )
+
+        return {
+            'email': user.email,
+            'username': user.username
+        }
+
+    def validate_password(self, password_var):
+        # Check if password is is between 8 to 128 characters
+        # check if password contains upper case letters, numbers and special characters
+        if len(password_var) < 8:
+            raise serializers.ValidationError(
+                "Password cannot be less than 8 characters.")
+        elif len(password_var) >= 128:
+            raise serializers.ValidationError(
+                "Password cannot be more than 128 characters.")
+        elif password_var.isalnum() or re.search('[0-9]|[A-Z]', password_var) is None:
+            raise serializers.ValidationError(
+                "Password must at least contain a capital letter or number and special character.")
+        else:
+            return password_var
