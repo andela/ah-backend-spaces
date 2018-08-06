@@ -36,7 +36,7 @@ class TokenGenerator:
         """
         try:
             return jwt.decode(token, settings.SECRET_KEY, algorithm='HS256')
-        except Exception:
+        except Exception as e:
             return "invalid token"
 
 

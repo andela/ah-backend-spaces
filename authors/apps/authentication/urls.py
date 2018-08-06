@@ -2,7 +2,8 @@ from django.urls import path
 
 from .views import (
     LoginAPIView, RegistrationAPIView, UserRetrieveUpdateAPIView,
-    GoogleSocialAuthAPIView, FacebookSocialAuthAPIView, VerifyAPIView
+    GoogleSocialAuthAPIView, FacebookSocialAuthAPIView, VerifyAPIView,
+    ResetPasswordAPIView, UpdatePasswordAPIView
 )
 
 urlpatterns = [
@@ -12,4 +13,6 @@ urlpatterns = [
     path('auth/google/', GoogleSocialAuthAPIView.as_view()),
     path('auth/facebook/', FacebookSocialAuthAPIView.as_view()),
     path('activate/<str:token>', VerifyAPIView.as_view()),
+    path('user/reset_password/', ResetPasswordAPIView.as_view()),
+    path('user/new_password/<str:token>/', UpdatePasswordAPIView.as_view())
 ]
