@@ -63,7 +63,7 @@ class JWTAuthentication(authentication.BaseAuthentication):
             msg = 'This user has been deactivated.'
             raise exceptions.AuthenticationFailed(msg)
 
-        return (user, token)
+        return (user, payload['id'])
 
     def authenticate_header(self, request):
         return 'Token'

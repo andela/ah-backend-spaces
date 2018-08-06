@@ -9,6 +9,7 @@ omit =
     */migrations/*
     *manage*
     *0001_initial*
+    *authors/apps/articles/apps.py*
 
     
 show_missing = True
