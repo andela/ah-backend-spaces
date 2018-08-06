@@ -6,6 +6,8 @@ from .models import User
 
 import re
 
+from ..email.email import Mailer
+
 
 class RegistrationSerializer(serializers.ModelSerializer):
     """Serializers registration requests and creates a new user."""
@@ -35,6 +37,9 @@ class RegistrationSerializer(serializers.ModelSerializer):
         if db_email.exists():
             raise serializers.ValidationError(
                 "The email address you have used is already registered.")
+        elif Mailer.verify_email_exists(email_var) is False:
+            raise serializers.ValidationError(
+                "Please check if your email is valid")
         else:
             return email_var
 
@@ -120,7 +125,7 @@ class LoginSerializer(serializers.Serializer):
             )
 
         # A user needs to have their account verified for a successful registration
-        if not user.is_account_verfied:
+        if not user.is_verified:
             raise serializers.ValidationError(
                 'Please check your email and verify account'
             )
