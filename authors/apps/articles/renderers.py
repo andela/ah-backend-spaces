@@ -14,7 +14,6 @@ class ArticlesJSONRenderer(JSONRenderer):
         errors = data.get('errors', None)
 
         if errors is not None:
-            pass
             # As mentioned about, we will let the default JSONRenderer handle
             # rendering errors.
             return super(ArticlesJSONRenderer, self).render(data)
@@ -36,7 +35,6 @@ class CommentJSONRenderer(JSONRenderer):
         errors = data.get('errors', None)
 
         if errors is not None:
-            pass
             # As mentioned about, we will let the default JSONRenderer handle
             # rendering errors.
             return super(CommentJSONRenderer, self).render(data)

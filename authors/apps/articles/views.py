@@ -30,9 +30,12 @@ class CreateArticleAPIView(RetrieveUpdateAPIView):
         article["user_id"] = user_data[1]
 
         # create a an article slug fron title
-        slug = slugify(article["title"]).replace("_", "-")
-        slug = slug + "-" + str(uuid.uuid4()).split("-")[-1]
-        article["slug"] = slug
+        try:
+            slug = slugify(article["title"]).replace("_", "-")
+            slug = slug + "-" + str(uuid.uuid4()).split("-")[-1]
+            article["slug"] = slug
+        except KeyError:
+            pass
 
         # Notice here that we do not call `serializer.save()` like we did for
         # the registration endpoint. This is because we don't actually have
@@ -42,8 +45,10 @@ class CreateArticleAPIView(RetrieveUpdateAPIView):
         serializer = self.serializer_class(data=article)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        data = serializer.data
+        data["message"] = "Article created successfully."
 
-        return Response({"message": "Article created successfully."}, status=status.HTTP_201_CREATED)
+        return Response(data, status=status.HTTP_201_CREATED)
 
 
 class RateArticleAPIView(RetrieveUpdateAPIView):
