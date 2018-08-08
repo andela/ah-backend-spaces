@@ -33,21 +33,21 @@ class BaseTest(TestCase):
         }
 
         self.rating_to_create = {
-            "article": {
+            "Rating": {
                 "rating": 1,
                 "review": "the service was really great. I recomend you go there."
             }
         }
 
         self.rating_lower_than_1 = {
-            "article": {
+            "Rating": {
                 "rating": 0,
                 "review": "the service was really great. I recomend you go there."
             }
         }
 
         self.rating_greater_than_5 = {
-            "article": {
+            "Rating": {
                 "rating": 6,
                 "review": "the service was really great. I recomend you go there."
             }
@@ -171,11 +171,11 @@ class TestArticleRating(BaseTest):
         headers = {'HTTP_AUTHORIZATION': 'Token ' + token}
 
         response = self.test_client.post(
-            "/api/articles/rate/1", **headers,
+            "/api/articles/1/rating/", **headers,
             data=json.dumps(self.rating_to_create), content_type='application/json')
         self.assertEqual(response.status_code, 201)
         self.assertEqual(
-            response.json()['article']['message'], 'Article rated successfully.')
+            response.json()['Rating']['message'], 'Article rated successfully.')
 
     def test_rating_lower_than_1(self):
         """ test if a user can make rating level less than one """
@@ -189,7 +189,7 @@ class TestArticleRating(BaseTest):
         headers = {'HTTP_AUTHORIZATION': 'Token ' + token}
 
         response = self.test_client.post(
-            "/api/articles/rate/1", **headers,
+            "/api/articles/1/rating/", **headers,
             data=json.dumps(self.rating_lower_than_1), content_type='application/json')
         self.assertEqual(response.status_code, 400)
         self.assertEqual(
@@ -207,7 +207,7 @@ class TestArticleRating(BaseTest):
         headers = {'HTTP_AUTHORIZATION': 'Token ' + token}
 
         response = self.test_client.post(
-            "/api/articles/rate/1", **headers,
+            "/api/articles/1/rating/", **headers,
             data=json.dumps(self.rating_greater_than_5), content_type='application/json')
         self.assertEqual(response.status_code, 400)
         self.assertEqual(
@@ -225,11 +225,11 @@ class TestArticleRating(BaseTest):
         headers = {'HTTP_AUTHORIZATION': 'Token ' + token}
 
         self.test_client.post(
-            "/api/articles/rate/1", **headers,
+            "/api/articles/1/rating/", **headers,
             data=json.dumps(self.rating_to_create), content_type='application/json')
 
         response2 = self.test_client.post(
-            "/api/articles/rate/1", **headers,
+            "/api/articles/1/rating/", **headers,
             data=json.dumps(self.rating_to_create), content_type='application/json')
         self.assertEqual(response2.status_code, 400)
         self.assertEqual(
@@ -247,7 +247,7 @@ class TestArticleRating(BaseTest):
         headers = {'HTTP_AUTHORIZATION': 'Token ' + token}
 
         response = self.test_client.post(
-            "/api/articles/rate/1", **headers,
+            "/api/articles/1/rating/", **headers,
             data=json.dumps(self.rating_to_create), content_type='application/json')
         self.assertEqual(response.status_code, 400)
         self.assertEqual(
