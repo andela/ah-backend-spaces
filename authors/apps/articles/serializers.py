@@ -16,7 +16,7 @@ class CreateArticleAPIViewSerializer(serializers.ModelSerializer):
         # List all of the fields that could possibly be included in a request
         # or response, including fields specified explicitly above.
         # return a success message on succeesful registration
-        fields = ['title', 'body', 'description',
+        fields = ['id', 'title', 'body', 'description',
                   'user_id', 'slug', 'published', 'created_at']
 
 
