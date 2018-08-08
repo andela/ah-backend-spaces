@@ -7,8 +7,11 @@ from django.template.defaultfilters import slugify
 import uuid
 from ..authentication.backends import JWTAuthentication
 from ..authentication.models import User
+from . models import Rating as DbRating
 
-from .renderers import ArticlesJSONRenderer, CommentJSONRenderer
+from .renderers import (
+    ArticlesJSONRenderer, CommentJSONRenderer, RatingJSONRenderer
+)
 
 from .serializers import (
     CreateArticleAPIViewSerializer, RatingArticleAPIViewSerializer,
@@ -48,11 +51,11 @@ class CreateArticleAPIView(RetrieveUpdateAPIView):
 
 class RateArticleAPIView(RetrieveUpdateAPIView):
     permission_classes = (IsAuthenticated,)
-    renderer_classes = (ArticlesJSONRenderer,)
+    renderer_classes = (RatingJSONRenderer,)
     serializer_class = RatingArticleAPIViewSerializer
 
     def post(self, request, article_id):
-        Rating = request.data.get('article', {})
+        Rating = request.data.get('Rating', {})
 
         # Add the article id to rating to be made
         Rating["article_id"] = article_id
@@ -71,8 +74,24 @@ class RateArticleAPIView(RetrieveUpdateAPIView):
         serializer = self.serializer_class(data=Rating)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        data = serializer.data
+        data["message"] = "Article rated successfully."
 
-        return Response({"message": "Article rated successfully."}, status=status.HTTP_201_CREATED)
+        # get average rating
+        rating_data = DbRating.objects.filter(
+            article_id=article_id).values('rating')
+        empty_lst = []
+        for rating in rating_data:
+            empty_lst.append(rating["rating"])
+
+        # callculate average rating
+        average_rating = sum(empty_lst) / len(empty_lst)
+        data["average_rating"] = average_rating
+
+        # append success message to output
+        data["message"] = "Article rated successfully."
+
+        return Response(data, status=status.HTTP_201_CREATED)
 
 
 class CommentArticleAPIView(CreateAPIView):
