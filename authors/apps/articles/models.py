@@ -54,3 +54,44 @@ class Rating(models.Model):
 
     # This takes the time stamp of when the article's rating was updated
     updated_at = models.DateTimeField(auto_now=True)
+
+
+class Comments(models.Model):
+
+    # this contains the comment text to an article
+    body = models.CharField(db_index=True, max_length=255)
+
+    # this field enables us identify which comment belongs to which article
+    # it is a foreign key from articles
+    article_id = models.ForeignKey(Article, on_delete=models.CASCADE)
+
+    # this enables us know which user commented on an article
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    # this takes the time stamp of when an article was commented on
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    # This takes the time stamp of when the article's comment was updated
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class ChildComment(models.Model):
+
+    # this contains the comment text to an article
+    body = models.CharField(db_index=True, max_length=255)
+
+    # this field enables us identify which comment belongs to which article
+    # it is a foreign key from articles
+    article_id = models.ForeignKey(Article, on_delete=models.CASCADE)
+
+    # conatins the id if the parent comment that one is reacting to
+    parent_id = models.ForeignKey(Comments, on_delete=models.CASCADE)
+
+    # this enables us know which user commented on an article
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    # this takes the time stamp of when an article was commented on
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    # This takes the time stamp of when the article's comment was updated
+    updated_at = models.DateTimeField(auto_now=True)

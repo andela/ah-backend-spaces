@@ -53,6 +53,25 @@ class BaseTest(TestCase):
             }
         }
 
+        self.comment_to_create = {
+            "comment": {
+                "body": "His name was my name too.",
+            }
+        }
+
+        self.comment_as_thread_of_another = {
+            "comment": {
+                "body": "His name was my name too.",
+                "parent_id": 1
+            }
+        }
+
+        self.longer_than_8000_comment_body = {
+            "comment": {
+                "body": "H" * 80000,
+            }
+        }
+
         # Create a verified user
         johndoe_user = User.objects.create_user(
             'Aurthurs', 'haven.authors@gmail.com', 'jakejake@20AA')
@@ -68,6 +87,18 @@ class BaseTest(TestCase):
         self.user_2_logged_in = self.login_user(self.user_to_login2)
         self.create_article = self.create_an_article(self.user_logged_in)
         self.own_article = self.create_an_article(self.user_2_logged_in)
+
+        # This creats a comment to an article using the `comment_on_article` method below
+        self.article_comment = self.comment_on_article(
+            self.comment_to_create)
+
+        # This create a comment that is a threat to a parent comment
+        self.thread_comment = self.comment_on_article(
+            self.comment_as_thread_of_another)
+
+        # This created a comment with body text longer than 8000 characters
+        self.longer_than_8000_comment = self.comment_on_article(
+            self.longer_than_8000_comment_body)
 
     def login_user(self, user_details_dict):
         """Authenticate the user credentials and login
@@ -95,6 +126,21 @@ class BaseTest(TestCase):
         return self.test_client.post(
             "/api/articles/", **headers,
             data=json.dumps(self.article_to_create), content_type='application/json')
+
+    def comment_on_article(self, comment):
+        # log the user in to get auth token
+        response = self.user_logged_in
+
+        # extrct token from response
+        token = response.json()['user']['token']
+
+        # generate an HTTP header with token
+        headers = {'HTTP_AUTHORIZATION': 'Token ' + token}
+
+        # send a request to create an article
+        return self.test_client.post(
+            "/api/articles/1/comment/", **headers,
+            data=json.dumps(comment), content_type='application/json')
 
     def tearDown(self):
         pass
@@ -206,3 +252,37 @@ class TestArticleRating(BaseTest):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(
             response.json()['errors']['error'], ['You cannot rate your own article'])
+
+
+class TestCommentingOnArtilces(BaseTest):
+
+    def test_comment_on_article(self):
+        """ test if a user can create a comment """
+
+        response = self.article_comment
+
+        #  perform test case test
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(
+            response.json()['comment']['message'], 'Comment created successfully.')
+
+    def test_create_a_threading_comment(self):
+        """ test if a comment can be created as a thread """
+
+        response = self.thread_comment
+
+        #  perform test case test
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(
+            response.json()['comment']['message'], 'Comment created successfully.')
+
+    def test_artcle_with_long_body(self):
+        """ test if a comment body can be longer than 8000 characters """
+
+        response = self.longer_than_8000_comment
+
+        #  perform test case test
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.json()['errors']['body'], [
+                'A comment cannot be more than 8000 characters including spaces.'])

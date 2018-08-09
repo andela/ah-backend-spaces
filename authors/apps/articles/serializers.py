@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from ..authentication.models import User
 
-from .models import Article, Rating
+from .models import Article, Rating, Comments, ChildComment
 
 import re
 
@@ -60,3 +60,51 @@ class RatingArticleAPIViewSerializer(serializers.ModelSerializer):
                 "You cannot rate an article twice."
             )
         return data
+
+
+class CommentArticleAPIViewSerializer(serializers.ModelSerializer):
+
+    body = serializers.CharField()
+    article_id = Article.pk
+    author = User.pk
+
+    class Meta:
+        model = Comments
+        # List all of the fields that could possibly be included in a request
+        # or response, including fields specified explicitly above.
+        # return a success message on succeesful registration
+        fields = ['body', 'article_id', 'author', 'created_at']
+
+    def validate_body(self, body_var):
+
+        # check if a comment contains more than 8000 characters
+        # This includes spaces
+        if len(body_var) > 8000:
+            raise serializers.ValidationError(
+                "A comment cannot be more than 8000 characters including spaces."
+            )
+        return body_var
+
+
+class ChildCommentSerializer(serializers.ModelSerializer):
+    body = serializers.CharField()
+    article_id = Article.pk
+    author = User.pk
+    parent_id = Comments.pk
+
+    class Meta:
+        model = ChildComment
+        # List all of the fields that could possibly be included in a request
+        # or response, including fields specified explicitly above.
+        # return a success message on succeesful registration
+        fields = ['body', 'article_id', 'author', 'created_at', 'parent_id']
+
+    def validate_body(self, body_var):
+
+        # check if a comment contains more than 8000 characters
+        # This includes spaces
+        if len(body_var) > 8000:
+            raise serializers.ValidationError(
+                "A comment cannot be more than 8000 characters including spaces."
+            )
+        return body_var
