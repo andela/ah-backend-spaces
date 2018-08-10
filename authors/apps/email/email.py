@@ -36,12 +36,12 @@ class TokenGenerator:
         """
         try:
             return jwt.decode(token, settings.SECRET_KEY, algorithm='HS256')
-        except Exception as e:
+        except Exception:
             return "invalid token"
 
 
 class Mailer:
-    """Sends emails to users"""
+    """Mailer is used to emails to users"""
 
     # SMTP configuration values
     host_domain = os.getenv('HOST_DOMAIN')
@@ -50,14 +50,20 @@ class Mailer:
     sender_email = os.getenv('EMAIL_HOST_USER')
     sender_password = os.getenv('EMAIL_HOST_PASSWORD')
 
-    # SMTP connection
-    server = smtplib.SMTP("{}:{}".format(sender_domain, sender_port))
-    server.ehlo()
-    server.starttls()
-    server.login(sender_email, sender_password)
+    def __init__(self):
+        self._server = self.get_smtp_connection()
+
+    def get_smtp_connection(self):
+        server = smtplib.SMTP(self.sender_domain)
+        server.ehlo()
+        server.starttls()
+        return server
+
+    @property
+    def server(self):
+        return self._server
 
     # https://stackoverflow.com/questions/8022530/python-check-for-valid-email-address/8022584
-    # validate and verify that the email does exist and is reachable
     # validate that the email address's domain is also available
     @staticmethod
     def verify_email_exists(email_address):
@@ -66,16 +72,16 @@ class Mailer:
         else:
             return True
 
-    def copyright_year(self):
+    def get_copyright_year(self):
         """ returns the current year expressed as a string"""
 
         return datetime.strftime(datetime.now(), "%Y")
 
     # https://github.com/abulojoshua1/ipt/blob/master/sendmail.py
-    def send(self, user, email_subject, template_name, context):
+    def send(self, user_email, email_subject, template_name, context):
 
         # Add more values to render in the template
-        context['copyright_year'] = self.copyright_year()
+        context['copyright_year'] = self.get_copyright_year()
         context['domain'] = self.host_domain
 
         # Load and return the verify_email template
@@ -84,12 +90,17 @@ class Mailer:
         # header attached to the email
         headers = "\r\n".join(["from: " + self.sender_email,
                                "subject: " + email_subject,
-                               "to: " + user['email'],
+                               "to: " + user_email,
                                "mime-version: 1.0",
                                "content-type: text/html"])
 
         # body_of_email can be plaintext or html!
         content = headers + "\r\n\r\n" + template.render(context)
 
-        # Send an email
-        self.server.sendmail(self.sender_email, user['email'], content)
+        # Send an email if smtp server connection exists
+        if self.get_smtp_connection() is not False:
+            self.server.login(self.sender_email, self.sender_password)
+            self.server.sendmail(self.sender_email, user_email, content)
+            self.server.quit()
+            return True
+        return False
