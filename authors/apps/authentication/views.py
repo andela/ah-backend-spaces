@@ -127,7 +127,7 @@ class UserRetrieveUpdateAPIView(RetrieveUpdateAPIView):
             request.user, data=serializer_data, partial=True
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        serializer.update(request.user, serializer_data)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 
