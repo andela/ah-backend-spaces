@@ -221,7 +221,7 @@ class TestRegistration(BaseTest):
         response = self.user_registered
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json()[
-                         'user']['message'], 'You were succesfull registered! Please check ' +
+                         'user']['message'], 'You were succesfully registered! Please check ' +
                          self.user_to_register["user"]["email"] + ' for a verification link.')
 
     def test_user_can_duplicate_registration(self):

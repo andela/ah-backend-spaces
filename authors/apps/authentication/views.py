@@ -32,7 +32,6 @@ class RegistrationAPIView(APIView):
         # your own work later on. Get familiar with it.
         serializer = self.serializer_class(data=user)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
 
         # These are the values about the user that we need to send an email
         subject = "Confirm your account"
@@ -43,25 +42,38 @@ class RegistrationAPIView(APIView):
         # verifying the user.
         callback = {'url': user['callbackurl']}
         user_data = {
-            'username': serializer.data['username'],
-            'email': serializer.data['email'],
+            'username': serializer.validated_data['username'],
+            'email': serializer.validated_data['email'],
             'callbackurl': callback['url'],
         }
 
-        # username to render in the verify email template
-        # token to be used in verifying the user
+        # username and token to render in the verify email template
         context = {
-            'username': serializer.data['username'],
+            'username': serializer.validated_data['username'],
             'token': self.token_class.make_custom_token(user_data)
         }
 
         # send the user an email on successful registration
-        self.send_user_email.send(
-            serializer.data, subject, template_name, context)
+        message = {"message": "You were succesfully registered! Please " +
+                   "check " + serializer.validated_data["email"] +
+                   " for a verification link."}
 
-        message = {"message": "You were succesfull registered! Please check " +
-                   serializer.data["email"] + " for a verification link."}
-        return Response(message, status=status.HTTP_201_CREATED)
+        # Attempt to send an email and check if email was sent successfully
+        # then save data to the database. The expression returns true if the
+        # message was sent successfully.
+        if not os.getenv('TESTING_ENV'):
+            is_email_sent = self.send_user_email.send(
+                serializer.validated_data["email"], subject, template_name,
+                context)
+        else:
+            is_email_sent = True
+
+        if is_email_sent:
+            serializer.save()
+            return Response(message, status=status.HTTP_201_CREATED)
+
+        return Response({"error": "Connection to smtp server failed"},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class LoginAPIView(APIView):
@@ -171,7 +183,7 @@ class ResetPasswordAPIView(APIView):
 
         # send the user an email on successful registration
         self.send_user_email.send(
-            serializer.data, subject, template_name, context)
+            serializer.data['email'], subject, template_name, context)
 
         message = {"message": "A password reset link has been sent " +
                    user["email"] + ", please check your email"}
