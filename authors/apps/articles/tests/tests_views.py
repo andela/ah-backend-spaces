@@ -1,6 +1,8 @@
 from django.test import Client
 from django.test import TestCase
+from ...articles.models import Article
 from authors.apps.authentication.models import User
+from ...notifications.models import Notifications
 import json
 
 
@@ -15,6 +17,15 @@ class BaseTest(TestCase):
                 "title": "hahahhaha hahaha hahah ahhah",
                 "body": "<p>this is a body that is here hahahhahaha\n </p>",
                 "description": "this is another article hahahhaha"
+            }
+        }
+
+        self.article_to_update = {
+            "article": {
+                "title": "This is an update",
+                "body": "<p>This is the updated body\n </p>",
+                "description": "This article had to be updated",
+                "published": True
             }
         }
 
@@ -33,21 +44,21 @@ class BaseTest(TestCase):
         }
 
         self.rating_to_create = {
-            "Rating": {
+            "rating": {
                 "rating": 1,
                 "review": "the service was really great. I recomend you go there."
             }
         }
 
         self.rating_lower_than_1 = {
-            "Rating": {
+            "rating": {
                 "rating": 0,
                 "review": "the service was really great. I recomend you go there."
             }
         }
 
         self.rating_greater_than_5 = {
-            "Rating": {
+            "rating": {
                 "rating": 6,
                 "review": "the service was really great. I recomend you go there."
             }
@@ -72,9 +83,23 @@ class BaseTest(TestCase):
             }
         }
 
+        # this is a list of notifications to mart as read
+        self.mark_as_read = {
+            "notification": {
+                "notifications": [1]
+            }
+        }
+
+        # this is a list of notifications to mart as read
+        self.mark_as_read_no_exitsent = {
+            "notification": {
+                "notifications": [8, 9]
+            }
+        }
+
         # Create a verified user
         johndoe_user = User.objects.create_user(
-            'Aurthurs', 'haven.authors@gmail.com', 'jakejake@20AA')
+            'Aurthurs3', 'haven.authors@gmail.com', 'jakejake@20AA')
         johndoe_user.is_verified = True
         johndoe_user.save()
 
@@ -87,6 +112,19 @@ class BaseTest(TestCase):
         self.user_2_logged_in = self.login_user(self.user_to_login2)
         self.create_article = self.create_an_article(self.user_logged_in)
         self.own_article = self.create_an_article(self.user_2_logged_in)
+
+        # create a notification for the test user
+        alert = Notifications.objects.create(
+            article_id=Article.objects.get(pk=1), notification_title="Title", notification_body="body",
+            notification_owner=User.objects.get(pk=2),
+        )
+        alert.save()
+
+        # update an article with id 1
+        self.updated_article = self.update_an_article(
+            self.user_logged_in
+        )
+        self.foloo = self.follow_a_user()
 
         # This creats a comment to an article using the `comment_on_article` method below
         self.article_comment = self.comment_on_article(
@@ -127,6 +165,21 @@ class BaseTest(TestCase):
             "/api/articles/", **headers,
             data=json.dumps(self.article_to_create), content_type='application/json')
 
+    def update_an_article(self, article_owner):
+        # log the user in to get auth token
+        response = article_owner
+
+        # extrct token from response
+        token = response.json()['user']['token']
+
+        # generate an HTTP header with token
+        headers = {'HTTP_AUTHORIZATION': 'Token ' + token}
+
+        # send a request to create an article
+        return self.test_client.put(
+            "/api/articles/1", **headers,
+            data=json.dumps(self.article_to_update), content_type='application/json')
+
     def comment_on_article(self, comment):
         # log the user in to get auth token
         response = self.user_logged_in
@@ -142,6 +195,19 @@ class BaseTest(TestCase):
             "/api/articles/1/comment/", **headers,
             data=json.dumps(comment), content_type='application/json')
 
+    def follow_a_user(self):
+        # follow a user
+        response = self.user_2_logged_in
+
+        # extrct token from response
+        token = response.json()['user']['token']
+
+        # generate an HTTP header with token
+        headers = {'HTTP_AUTHORIZATION': 'Token ' + token}
+
+        return self.test_client.post(
+            "/api/profiles/{}/follow/".format("Aurthurs"), **headers, content_type='application/json')
+
     def tearDown(self):
         pass
 
@@ -156,6 +222,14 @@ class TestArticles(BaseTest):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(
             response.json()['article']['message'], 'Article created successfully.')
+
+    def test_update_article(self):
+        response = self.updated_article
+
+        #  perform test for update on an article
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(
+            response.json()['article']['message'], 'Article updated successfully.')
 
 
 class TestArticleRating(BaseTest):

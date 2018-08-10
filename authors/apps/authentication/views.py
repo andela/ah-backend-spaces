@@ -5,6 +5,7 @@ from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.conf import settings
 
 from .renderers import UserJSONRenderer
 from .serializers import (
@@ -61,7 +62,7 @@ class RegistrationAPIView(APIView):
         # Attempt to send an email and check if email was sent successfully
         # then save data to the database. The expression returns true if the
         # message was sent successfully.
-        if not os.getenv('TESTING_ENV'):
+        if settings.SENDING_MAIL is True:
             is_email_sent = self.send_user_email.send(
                 serializer.validated_data["email"], subject, template_name,
                 context)
@@ -229,7 +230,6 @@ class FacebookSocialAuthAPIView(APIView):
         # handles everything we need.
         serializer = self.serializer_class(data=user)
         serializer.is_valid(raise_exception=True)
-        # serializer.save()
 
         return Response(serializer.data, status=status.HTTP_200_OK)
 

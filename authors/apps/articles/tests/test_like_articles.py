@@ -14,7 +14,7 @@ class LikeArticleTest(BaseTest):
             data=json.dumps(self.article_to_create), content_type='application/json')
 
         response = self.test_client.get(
-            "/api/articles/1/", **auth_headers, content_type='application/json')
+            "/api/articles/1/likes/", **auth_headers, content_type='application/json')
 
         self.assertEqual(response.status_code, 405)
         self.assertEqual(
@@ -32,7 +32,7 @@ class LikeArticleTest(BaseTest):
             data=json.dumps(self.article_to_create), content_type='application/json')
 
         response = self.test_client.post(
-            "/api/articles/1/", **auth_headers,
+            "/api/articles/1/likes/", **auth_headers,
             data=json.dumps(self.article_to_like), content_type='application/json')
 
         self.assertEqual(response.status_code, 200)
@@ -48,7 +48,7 @@ class LikeArticleTest(BaseTest):
             data=json.dumps(self.article_to_create), content_type='application/json')
 
         response = self.test_client.post(
-            "/api/articles/1000/", **auth_headers,
+            "/api/articles/1000/likes/", **auth_headers,
             data=json.dumps(self.article_to_like), content_type='application/json')
 
         self.assertEqual(response.status_code, 400)
@@ -65,12 +65,12 @@ class LikeArticleTest(BaseTest):
 
         # like article 1 the first time
         self.test_client.post(
-            "/api/articles/1/", **auth_headers,
+            "/api/articles/1/likes/", **auth_headers,
             data=json.dumps(self.article_to_like), content_type='application/json')
 
         # like article 1 the second time
         response = self.test_client.post(
-            "/api/articles/1/", **auth_headers,
+            "/api/articles/1/likes/", **auth_headers,
             data=json.dumps(self.article_to_like), content_type='application/json')
 
         self.assertEqual(response.status_code, 400)
@@ -86,7 +86,7 @@ class LikeArticleTest(BaseTest):
             data=json.dumps(self.article_to_create), content_type='application/json')
 
         response = self.test_client.post(
-            "/api/articles/1/", **auth_headers,
+            "/api/articles/1/likes/", **auth_headers,
             data=json.dumps(self.null_article_to_like), content_type='application/json')
 
         self.assertEqual(response.status_code, 400)
@@ -103,11 +103,11 @@ class LikeArticleTest(BaseTest):
             data=json.dumps(self.article_to_create), content_type='application/json')
 
         self.test_client.post(
-            "/api/articles/1/", **auth_headers,
+            "/api/articles/1/likes/", **auth_headers,
             data=json.dumps(self.article_to_like), content_type='application/json')
 
         response = self.test_client.put(
-            "/api/articles/1/", **auth_headers,
+            "/api/articles/1/likes/", **auth_headers,
             data=json.dumps(self.article_to_dis_like), content_type='application/json')
 
         self.assertEqual(response.status_code, 200)
@@ -124,7 +124,7 @@ class LikeArticleTest(BaseTest):
             data=json.dumps(self.article_to_create), content_type='application/json')
 
         response = self.test_client.put(
-            "/api/articles/1/", **auth_headers,
+            "/api/articles/1/likes/", **auth_headers,
             data=json.dumps(self.article_to_dis_like), content_type='application/json')
 
         self.assertEqual(response.status_code, 400)
@@ -136,7 +136,7 @@ class LikeArticleTest(BaseTest):
         auth_headers = self.user_logged_in
 
         response = self.test_client.put(
-            "/api/articles/10000/", **auth_headers,
+            "/api/articles/10000/likes/", **auth_headers,
             data=json.dumps(self.article_to_dis_like), content_type='application/json')
 
         self.assertEqual(response.status_code, 400)
@@ -153,11 +153,11 @@ class LikeArticleTest(BaseTest):
             data=json.dumps(self.article_to_create), content_type='application/json')
 
         self.test_client.post(
-            "/api/articles/1/", **auth_headers,
+            "/api/articles/1/likes/", **auth_headers,
             data=json.dumps(self.article_to_like), content_type='application/json')
 
         response = self.test_client.delete(
-            "/api/articles/1/", **auth_headers,
+            "/api/articles/1/likes/", **auth_headers,
             data=json.dumps(self.article_to_dis_like), content_type='application/json')
 
         self.assertEqual(response.status_code, 200)
@@ -174,7 +174,7 @@ class LikeArticleTest(BaseTest):
             data=json.dumps(self.article_to_create), content_type='application/json')
 
         response = self.test_client.delete(
-            "/api/articles/1/", **auth_headers,
+            "/api/articles/1/likes/", **auth_headers,
             data=json.dumps(self.article_to_dis_like), content_type='application/json')
 
         self.assertEqual(response.status_code, 400)
@@ -186,7 +186,7 @@ class LikeArticleTest(BaseTest):
         auth_headers = self.user_logged_in
 
         response = self.test_client.delete(
-            "/api/articles/1000/", **auth_headers,
+            "/api/articles/1000/likes/", **auth_headers,
             data=json.dumps(self.article_to_dis_like), content_type='application/json')
 
         self.assertEqual(response.status_code, 400)

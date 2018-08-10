@@ -10,6 +10,7 @@ omit =
     *manage*
     *0001_initial*
     *authors/apps/articles/apps.py*
+    */authors/apps/notifications/apps.py*
 
     
 show_missing = True

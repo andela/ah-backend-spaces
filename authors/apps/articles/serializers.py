@@ -8,6 +8,8 @@ from .models import (
     Article, Rating, Comments, ChildComment, ArticleLikes,
     ArticleFavourites as ArticleFs
 )
+from ..notifications.models import Notifications
+from ..profiles.models import Profile
 import re
 
 
@@ -15,6 +17,7 @@ class CreateArticleAPIViewSerializer(TaggitSerializer, serializers.ModelSerializ
 
     tags = TagListSerializerField(required=False)
     author = serializers.SerializerMethodField()
+    user_id = User.pk
 
     def get_author(self, user_object):
         user = {
@@ -30,6 +33,101 @@ class CreateArticleAPIViewSerializer(TaggitSerializer, serializers.ModelSerializ
         # return a success message on succeesful registration
         fields = ['id', 'title', 'body', 'description',
                   'author', 'slug', 'published', 'created_at', 'tags']
+
+    def validate_title(self, title_var):
+        if len(title_var) > 150:
+            raise serializers.ValidationError(
+                "Title cannot be greater than 150 characters."
+            )
+        return title_var
+
+    def validate_description(self, description_var):
+        if len(description_var) > 600:
+            raise serializers.ValidationError(
+                "Description cannot be greater than 150 characters."
+            )
+        return description_var
+
+
+class UpdateArticleAPIViewSerializer(serializers.ModelSerializer):
+    user_id = User.pk
+
+    class Meta:
+        model = Article
+        # List all of the fields that could possibly be included in a request
+        # or response, including fields specified explicitly above.
+        # return a success message on succeesful registration
+        fields = ['id', 'title', 'body', 'description',
+                  'author', 'slug', 'published', 'created_at', 'tags']
+
+    def validate_title(self, title_var):
+        if len(title_var) > 150:
+            raise serializers.ValidationError(
+                "Title cannot be greater than 150 characters."
+            )
+        return title_var
+
+    def validate_description(self, description_var):
+        if len(description_var) > 600:
+            raise serializers.ValidationError(
+                "Description cannot be greater than 150 characters."
+            )
+        return description_var
+
+    def update_article(self, article_id, data, user_id):
+        try:
+            article_instance = Article.objects.get(pk=article_id)
+        except:  # noqa: E722
+            raise serializers.ValidationError(
+                "Article with id " + str(article_id) + " was not found."
+            )
+
+        # get username using userid
+        # this helps us call the notifications class method that
+        # will generate notifications of a published article to a user's following
+        username = User.objects.filter(pk=user_id).values("username")[
+            0]["username"]
+
+        if article_instance.title == data["title"]:
+            data.pop("slug", None)
+
+        user_followers = []
+
+        if article_instance.published is False and \
+                data["published"]:
+            user_followers = self.notifications(username, article_id)
+            for follower_id in user_followers:
+                Notifications.objects.create(article_id=Article.objects.get(
+                    pk=article_id), notification_title=article_instance.title,
+                    notification_body=article_instance.body,
+                    notification_owner=User.objects.get(pk=follower_id))
+
+        for (key, value) in data.items():
+            setattr(article_instance, key, value)
+        article_instance.save()
+
+        return len(user_followers)
+
+    def notifications(self, username, followee_id):
+        list_of_followers = []
+
+        try:
+            profile = Profile.objects.select_related('user').get(
+                user__username=username
+            )
+        except:  # noqa: E722
+            pass
+
+        user_followers = Profile.follows.through.objects.filter(
+            to_profile_id=profile.id)
+        for a_follower in user_followers:
+            list_of_followers.append(
+                str(a_follower.from_profile_id)
+            )
+
+        # store notifications in the notifications database
+
+        return list_of_followers
 
 
 class RatingArticleAPIViewSerializer(serializers.ModelSerializer):
@@ -85,7 +183,7 @@ class CommentArticleAPIViewSerializer(serializers.ModelSerializer):
         # List all of the fields that could possibly be included in a request
         # or response, including fields specified explicitly above.
         # return a success message on succeesful registration
-        fields = ['body', 'article_id', 'author', 'created_at']
+        fields = ['id', 'body', 'article_id', 'author', 'created_at']
 
     def validate_body(self, body_var):
 
@@ -109,7 +207,8 @@ class ChildCommentSerializer(serializers.ModelSerializer):
         # List all of the fields that could possibly be included in a request
         # or response, including fields specified explicitly above.
         # return a success message on succeesful registration
-        fields = ['body', 'article_id', 'author', 'created_at', 'parent_id']
+        fields = ['id', 'body', 'article_id',
+                  'author', 'created_at', 'parent_id']
 
     def validate_body(self, body_var):
 
