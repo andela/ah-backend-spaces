@@ -35,6 +35,8 @@ class Article(models.Model):
     # tage_field = models.ManyToManyField()
     tags = TaggableManager(blank=True)
 
+    objects = models.Manager()
+
 
 class Rating(models.Model):
 
@@ -58,6 +60,8 @@ class Rating(models.Model):
 
     # This takes the time stamp of when the article's rating was updated
     updated_at = models.DateTimeField(auto_now=True)
+
+    objects = models.Manager()
 
 
 class Comments(models.Model):
@@ -99,6 +103,8 @@ class ChildComment(models.Model):
 
     # This takes the time stamp of when the article's comment was updated
     updated_at = models.DateTimeField(auto_now=True)
+
+    objects = models.Manager()
 
 
 class ArticleLikes(models.Model):

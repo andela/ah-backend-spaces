@@ -24,4 +24,6 @@ urlpatterns = [
     path('api/', include('authors.apps.articles.urls')),
 
     path('api/', include('authors.apps.profiles.urls')),
+
+    path('api/', include('authors.apps.notifications.urls')),
 ]

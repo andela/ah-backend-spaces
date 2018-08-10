@@ -19,16 +19,20 @@ from .renderers import (
 from .serializers import (
     CreateArticleAPIViewSerializer, RatingArticleAPIViewSerializer,
     CommentArticleAPIViewSerializer, ChildCommentSerializer,
-    LikeArticleAPIViewSerializer, FavouriteArticleAPIViewSerializer
+    LikeArticleAPIViewSerializer, FavouriteArticleAPIViewSerializer,
+    UpdateArticleAPIViewSerializer
 )
 
 
 class CreateArticleAPIView(RetrieveUpdateAPIView):
     permission_classes = (IsAuthenticated,)
     renderer_classes = (ArticlesJSONRenderer,)
-    serializer_class = CreateArticleAPIViewSerializer
 
     def post(self, request):
+        serializer_class = CreateArticleAPIViewSerializer
+        """
+        This class method is used to create user articles
+        """
         article = request.data.get('article', {})
 
         # decode user token and return its value
@@ -49,11 +53,56 @@ class CreateArticleAPIView(RetrieveUpdateAPIView):
         # anything to save. Instead, the `validate` method on our serializer
         # handles everything we need.
 
-        serializer = self.serializer_class(data=article)
+        serializer = serializer_class(data=article)
         serializer.is_valid(raise_exception=True)
         serializer.save(author=user_data[0])
         data = serializer.data
         data["message"] = "Article created successfully."
+
+        return Response(data, status=status.HTTP_201_CREATED)
+
+    def put(self, request, article_id):
+        serializer_class = UpdateArticleAPIViewSerializer
+        """
+        This class method is used to update a users article
+        """
+        article = request.data.get('article', {})
+
+        # decode user token and return its value
+        user_data = JWTAuthentication().authenticate(request)
+
+        # append user_id from token to article variable for later validations in serializers
+        article["author"] = user_data[1]
+
+        article['aid'] = article_id
+
+        # create a an article slug fron title
+        try:
+            slug = slugify(article["title"]).replace("_", "-")
+            slug = slug + "-" + str(uuid.uuid4()).split("-")[-1]
+            article["slug"] = slug
+        except KeyError:
+            pass
+
+        # Notice here that we do not call `serializer.save()` like we did for
+        # the registration endpoint. This is because we don't actually have
+        # anything to save. Instead, the `validate` method on our serializer
+        # handles everything we need.
+
+        serializer = serializer_class(data=article)
+        serializer.is_valid(raise_exception=True)
+
+        # create an instance of user model class from user id
+        # gotten from the token paresd to the route token
+        article["author"] = User.objects.get(pk=user_data[1])
+
+        # call the update_article class method in serializers
+        # this updates the article content but also does a couple of validations
+        serializer.update_article(article_id, article, user_data[1])
+
+        # create a data variable that contains all data to be sent back on success
+        data = serializer.data
+        data["message"] = "Article updated successfully."
 
         return Response(data, status=status.HTTP_201_CREATED)
 
@@ -64,7 +113,7 @@ class RateArticleAPIView(RetrieveUpdateAPIView):
     serializer_class = RatingArticleAPIViewSerializer
 
     def post(self, request, article_id):
-        Rating = request.data.get('Rating', {})
+        Rating = request.data.get('rating', {})
 
         # Add the article id to rating to be made
         Rating["article_id"] = article_id
@@ -86,19 +135,24 @@ class RateArticleAPIView(RetrieveUpdateAPIView):
         data = serializer.data
         data["message"] = "Article rated successfully."
 
-        # get average rating
+        # get all user ratings from the database
         rating_data = DbRating.objects.filter(
             article_id=article_id).values('rating')
-        empty_lst = []
-        for rating in rating_data:
-            empty_lst.append(rating["rating"])
 
-        # callculate average rating
-        average_rating = sum(empty_lst) / len(empty_lst)
+        # generate a list of all rating on an article using list comprehension
+        list_of_ratings = [rating["rating"] for rating in rating_data]
+
+        # callculate average rating by dividing sum over number of items in the list
+        average_rating = sum(list_of_ratings) / len(list_of_ratings)
+
+        # append the rating to data being output
         data["average_rating"] = average_rating
 
         # append success message to output
         data["message"] = "Article rated successfully."
+
+        # append the number of people who rated the article to the output
+        data["no_of_ratings"] = len(list_of_ratings)
 
         return Response(data, status=status.HTTP_201_CREATED)
 

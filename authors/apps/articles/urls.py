@@ -7,8 +7,10 @@ from .views import (
 
 urlpatterns = [
     path('articles/', CreateArticleAPIView.as_view()),
+    path('articles/<int:article_id>', CreateArticleAPIView.as_view()),
     path('articles/<int:article_id>/comment/', CommentArticleAPIView.as_view()),
     path('articles/<int:article_id>/rating/', RateArticleAPIView.as_view()),
-    path('articles/<int:article_id>/', LikeArticleAPIView.as_view()),
-    path('articles/<int:article_id>/favourite/', FavouriteArticleAPIView.as_view()),
+    path('articles/<int:article_id>/favourite/',
+         FavouriteArticleAPIView.as_view()),
+    path('articles/<int:article_id>/likes/', LikeArticleAPIView.as_view()),
 ]

@@ -3,6 +3,7 @@ from authors.settings.base import *
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
+SENDING_MAIL = True
 
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
