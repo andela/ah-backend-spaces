@@ -95,3 +95,24 @@ class ChildComment(models.Model):
 
     # This takes the time stamp of when the article's comment was updated
     updated_at = models.DateTimeField(auto_now=True)
+
+
+class ArticleLikes(models.Model):
+
+    # id of the article to be created
+    article = models.ForeignKey(
+        Article, on_delete=models.CASCADE, null=True, blank=True)
+
+    # this takes the value of the like by a user
+    article_like = models.BooleanField(db_index=True, default=None)
+
+    # this takes in th user id of the user who has liked
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    # time stamp of when the article was first liked at
+    article_liked_at = models.DateTimeField(auto_now_add=True)
+
+    # time stamp of when the article was last liked or unliked
+    like_updated_at = models.DateTimeField(auto_now=True)
+
+    objects = models.Manager()

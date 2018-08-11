@@ -1,5 +1,8 @@
 from rest_framework import status
-from rest_framework.generics import RetrieveUpdateAPIView, CreateAPIView
+from rest_framework.generics import (
+    RetrieveUpdateAPIView, CreateAPIView,
+    RetrieveUpdateDestroyAPIView
+)
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -15,7 +18,8 @@ from .renderers import (
 
 from .serializers import (
     CreateArticleAPIViewSerializer, RatingArticleAPIViewSerializer,
-    CommentArticleAPIViewSerializer, ChildCommentSerializer
+    CommentArticleAPIViewSerializer, ChildCommentSerializer,
+    LikeArticleAPIViewSerializer
 )
 
 
@@ -145,3 +149,87 @@ class CommentArticleAPIView(CreateAPIView):
         data["message"] = "Comment created successfully."
 
         return Response(data, status=status.HTTP_201_CREATED)
+
+
+class LikeArticleAPIView(RetrieveUpdateDestroyAPIView):
+    permission_classes = (IsAuthenticated,)
+    renderer_classes = (ArticlesJSONRenderer,)
+    serializer_class = LikeArticleAPIViewSerializer
+
+    def get(self, request, article_id):
+
+        return Response({"error": "method GET not allowed"},
+                        status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def post(self, request, article_id):
+        """ This function is handling requests for creating a like
+
+        Args:
+            request: contains more details about the request made
+            article_id: id of the article to be liked
+
+        Return: Response showing that the article was liked
+        """
+
+        like = request.data.get('article', {})
+
+        user_data = JWTAuthentication().authenticate(request)
+
+        like["user_id"] = user_data[1]
+
+        like["article_id"] = article_id
+
+        serializer = self.serializer_class(data=like)
+        serializer.is_valid(raise_exception=True)
+
+        result = serializer.perform_save(like)
+
+        return Response(result)
+
+    def put(self, request, article_id):
+        """ This function is handling requests for updating a like
+
+        Args:
+            request: contains more details about the request made
+            article_id: id of the article to check for when updating
+
+        Return: Response showing that the article was updated
+        """
+        like = request.data.get('article', {})
+
+        user_data = JWTAuthentication().authenticate(request)
+
+        like["user_id"] = user_data[1]
+
+        like["article_id"] = article_id
+
+        serializer = self.serializer_class(data=like)
+        serializer.is_valid(raise_exception=True)
+
+        result = serializer.perform_update(like)
+
+        return Response(result)
+
+    def delete(self, request, article_id):
+        """ This function is handling requests for deleting a like
+
+        Args:
+            request: contains more details about the request made
+            article_id: id of the article to be deleted
+
+        Return: Response showing that the article was deleted
+        """
+        serializer_data = request.data.get('article', {})
+
+        user_data = JWTAuthentication().authenticate(request)
+
+        serializer_data["user_id"] = user_data[1]
+        serializer_data["article_id"] = article_id
+
+        serializer = self.serializer_class(
+            data=serializer_data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        result = serializer.perform_delete(serializer_data)
+
+        return Response(result, status=status.HTTP_200_OK)
