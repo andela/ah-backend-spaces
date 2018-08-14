@@ -19,7 +19,7 @@ from .renderers import (
 from .serializers import (
     CreateArticleAPIViewSerializer, RatingArticleAPIViewSerializer,
     CommentArticleAPIViewSerializer, ChildCommentSerializer,
-    LikeArticleAPIViewSerializer
+    LikeArticleAPIViewSerializer, FavouriteArticleAPIViewSerializer
 )
 
 
@@ -208,6 +208,59 @@ class LikeArticleAPIView(RetrieveUpdateDestroyAPIView):
 
         result = serializer.perform_update(like)
 
+        return Response(result)
+
+    def delete(self, request, article_id):
+        """ This function is handling requests for deleting a like
+
+        Args:
+            request: contains more details about the request made
+            article_id: id of the article to be deleted
+
+        Return: Response showing that the article was deleted
+        """
+        serializer_data = request.data.get('article', {})
+
+        user_data = JWTAuthentication().authenticate(request)
+
+        serializer_data["user_id"] = user_data[1]
+        serializer_data["article_id"] = article_id
+
+        serializer = self.serializer_class(
+            data=serializer_data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        result = serializer.perform_delete(serializer_data)
+
+        return Response(result, status=status.HTTP_200_OK)
+
+
+class FavouriteArticleAPIView(CreateAPIView):
+    permission_classes = (IsAuthenticated,)
+    renderer_classes = (ArticlesJSONRenderer,)
+    serializer_class = FavouriteArticleAPIViewSerializer
+
+    def post(self, request, article_id):
+        """ This function is handling requests for creating a like
+
+        Args:
+            request: contains more details about the request made
+            article_id: id of the article to be liked
+
+        Return: Response showing that the article was liked
+        """
+
+        like = request.data.get('article', {})
+
+        user_data = JWTAuthentication().authenticate(request)
+
+        like["user_id"] = user_data[1]
+
+        like["article_id"] = article_id
+
+        serializer = self.serializer_class(data=like)
+        serializer.is_valid(raise_exception=True)
+        result = serializer.perform_save(like)
         return Response(result)
 
     def delete(self, request, article_id):
