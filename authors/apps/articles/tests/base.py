@@ -45,6 +45,33 @@ class BaseTest(TestCase):
                 "article_like": False
             }
         }
+        # content to post to article to favourite
+        self.article_to_favourite = {
+            "article": {
+                "article_favourite": True
+            }
+        }
+        self.article_to_favourite_with_false = {
+            "article": {
+                "article_favourite": False
+            }
+        }
+        self.null_article_to_favourite = {
+            "article": {
+                "article_favourite": None
+            }
+        }
+
+        self.article_to_un_favourite = {
+            "article": {
+                "article_favourite": False
+            }
+        }
+        self.article_to_un_favourite_with_true = {
+            "article": {
+                "article_favourite": True
+            }
+        }
         # article to create
         self.article_to_create = {
             "article": {

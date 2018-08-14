@@ -5,7 +5,8 @@ from rest_framework import serializers
 from ..authentication.models import User
 
 from .models import (
-    Article, Rating, Comments, ChildComment, ArticleLikes
+    Article, Rating, Comments, ChildComment, ArticleLikes,
+    ArticleFavourites as ArticleFs
 )
 import re
 
@@ -223,4 +224,106 @@ class LikeArticleAPIViewSerializer(serializers.ModelSerializer):
                 "user_id": item['user_id'],
                 "article_id": item['article_id'],
                 'status': "Your opinion has been deleted from article likes"
+            }
+
+
+class FavouriteArticleAPIViewSerializer(serializers.ModelSerializer):
+
+    article_favourite = serializers.BooleanField()
+    user_id = serializers.IntegerField()
+    article_id = serializers.IntegerField()
+
+    class Meta:
+        model = ArticleFs
+        # List all of the fields that could possibly be included in a request
+        # or response, including fields specified explicitly above.
+        # return a success message on succeesful registration
+        fields = ['article_favourite', 'user_id', 'article_id']
+
+    def validate_article_id(self, article_id):
+        # This method checks if an article with this id exists and raises an
+        # error if not.
+        article = Article.objects.filter(pk=article_id)
+
+        if not article.exists():
+            raise serializers.ValidationError("The article does not exist")
+        return article_id
+
+    def verify_article_exists(self, data):
+        # This method checks if an article has already been favourited by the
+        # same user and return the result accordingly. Its is used by other
+        # methods to check for  the same.
+        user_id = data.get('user_id', None)
+        article_id = data.get('article_id', None)
+
+        likes = ArticleFs.objects.filter(article_id=article_id,
+                                         user_id=user_id
+                                         ).values('id',
+                                                  'article_favourite',
+                                                  'user_id')
+        if likes.exists():
+            return True
+        return False
+
+    def get_data_items(self, data):
+        # This method returns adictioanry of values that will be required by
+        # other methods.
+        user_id = data.get('user_id', None)
+        article_id = data.get('article_id', None)
+        article_favourite = data.get('article_favourite', None)
+
+        data_items = {
+            "article_favourite": article_favourite,
+            "user_id": user_id,
+            "article_id": article_id,
+            "status": "article added to "
+        }
+
+        # Swap the like status to `False` if user sent article like `False`
+        if article_favourite is False:
+            data_items['status'] = "article removed from "
+
+        return data_items
+
+    def perform_save(self, data):
+        # This method makes a new entry for the like in the database.If the
+        # user has already liked the article they won't like it again.
+
+        item = self.get_data_items(data)
+        if item['article_favourite'] is False:
+            raise serializers.ValidationError(
+                "Use true to add article to your list of favourite articles")
+        elif self.verify_article_exists(data):
+            raise serializers.ValidationError(
+                "You have already added this article in your favourites list")
+        else:
+            like = ArticleFs(user_id=item['user_id'],
+                             article_id=item['article_id'],
+                             article_favourite=item['article_favourite'])
+            like.save()
+            return {
+                "article_favourite": like.article_favourite,
+                "user_id": item['user_id'],
+                "article_id": item['article_id'],
+                "message": "{} your list of favourite articles".format(
+                    item['status'])
+            }
+
+    def perform_delete(self, data):
+        # This methods deletes the like from the database when called from the
+        # view
+
+        item = self.get_data_items(data)
+        if not self.verify_article_exists(data):
+            raise serializers.ValidationError(
+                "Article already removed from your favourites list")
+        elif item['article_favourite'] is True:
+            raise serializers.ValidationError(
+                "Use false to remove article from your favourites list")
+        else:
+            ArticleFs.objects.filter(article_id=item['article_id'],
+                                     user_id=item['user_id']
+                                     ).delete()
+            return {
+                "message": "article removed from your list favourites articles"
             }

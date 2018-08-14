@@ -116,3 +116,21 @@ class ArticleLikes(models.Model):
     like_updated_at = models.DateTimeField(auto_now=True)
 
     objects = models.Manager()
+
+
+class ArticleFavourites(models.Model):
+
+    # id of the article to be favourited
+    article = models.ForeignKey(
+        Article, on_delete=models.CASCADE, null=True, blank=True)
+
+    # this takes the value of the favourite by a user
+    article_favourite = models.BooleanField(db_index=True, default=None)
+
+    # this takes in th user id of the user who has favourited the article
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    # time stamp of when the article was favourited at
+    article_favourited_at = models.DateTimeField(auto_now_add=True)
+
+    objects = models.Manager()
