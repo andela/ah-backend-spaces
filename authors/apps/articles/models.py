@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from ..authentication.models import User
 
 from django.db import models
+from taggit.managers import TaggableManager
 
 
 class Article(models.Model):
@@ -29,7 +30,10 @@ class Article(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     # This makes identifies the owner of the publication
-    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    # tage_field = models.ManyToManyField()
+    tags = TaggableManager(blank=True)
 
 
 class Rating(models.Model):

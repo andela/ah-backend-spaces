@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'authors.apps.profiles',
     'authors.apps.articles',
     'djmail',
+    'taggit'
 ]
 
 # Use nose to run all tests
