@@ -10,7 +10,7 @@ from django.template.defaultfilters import slugify
 import uuid
 from ..authentication.backends import JWTAuthentication
 from ..authentication.models import User
-from . models import Rating as DbRating
+from . models import Rating as DbRating, Article
 
 from .renderers import (
     ArticlesJSONRenderer, CommentJSONRenderer, RatingJSONRenderer
@@ -34,7 +34,7 @@ class CreateArticleAPIView(RetrieveUpdateAPIView):
         # decode user token and return its value
         user_data = JWTAuthentication().authenticate(request)
 
-        article["user_id"] = user_data[1]
+        article["author"] = user_data[1]
 
         # create a an article slug fron title
         try:
@@ -51,7 +51,7 @@ class CreateArticleAPIView(RetrieveUpdateAPIView):
 
         serializer = self.serializer_class(data=article)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        serializer.save(author=user_data[0])
         data = serializer.data
         data["message"] = "Article created successfully."
 

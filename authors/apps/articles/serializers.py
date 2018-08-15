@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate
 from rest_framework import serializers
 
 from ..authentication.models import User
-
+from taggit_serializer.serializers import TagListSerializerField, TaggitSerializer
 from .models import (
     Article, Rating, Comments, ChildComment, ArticleLikes,
     ArticleFavourites as ArticleFs
@@ -11,7 +11,17 @@ from .models import (
 import re
 
 
-class CreateArticleAPIViewSerializer(serializers.ModelSerializer):
+class CreateArticleAPIViewSerializer(TaggitSerializer, serializers.ModelSerializer):
+
+    tags = TagListSerializerField(required=False)
+    author = serializers.SerializerMethodField()
+
+    def get_author(self, user_object):
+        user = {
+            "username": user_object.author.username,
+        }
+
+        return user
 
     class Meta:
         model = Article
@@ -19,7 +29,7 @@ class CreateArticleAPIViewSerializer(serializers.ModelSerializer):
         # or response, including fields specified explicitly above.
         # return a success message on succeesful registration
         fields = ['id', 'title', 'body', 'description',
-                  'user_id', 'slug', 'published', 'created_at']
+                  'author', 'slug', 'published', 'created_at', 'tags']
 
 
 class RatingArticleAPIViewSerializer(serializers.ModelSerializer):
@@ -47,7 +57,7 @@ class RatingArticleAPIViewSerializer(serializers.ModelSerializer):
         article_id = data.get('article_id', None)
 
         # get user id of author of article
-        user_to_rate = article_id.user_id
+        user_to_rate = article_id.author
 
         if user_to_rate == user_id:
             raise serializers.ValidationError(
