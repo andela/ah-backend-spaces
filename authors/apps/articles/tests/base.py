@@ -80,6 +80,14 @@ class BaseTest(TestCase):
                 "description": "this is another article hahahhaha"
             }
         }
+        self.article_to_update = {
+            "article": {
+                "title": "This is an update",
+                "body": "<p>This is the updated body\n </p>",
+                "description": "This article had to be updated",
+                "published": True
+            }
+        }
 
         self.user_logged_in = self.login_user(self.user_to_login)
 

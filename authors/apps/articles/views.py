@@ -1,7 +1,7 @@
 from rest_framework import status
 from rest_framework.generics import (
     RetrieveUpdateAPIView, CreateAPIView,
-    RetrieveUpdateDestroyAPIView
+    RetrieveUpdateDestroyAPIView, ListAPIView
 )
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -12,8 +12,10 @@ from ..authentication.backends import JWTAuthentication
 from ..authentication.models import User
 from . models import Rating as DbRating, Article
 
+from .exceptions import ArticlesNotExist
 from .renderers import (
-    ArticlesJSONRenderer, CommentJSONRenderer, RatingJSONRenderer
+    ArticlesJSONRenderer, CommentJSONRenderer, RatingJSONRenderer,
+    ListArticlesJSONRenderer
 )
 
 from .serializers import (
@@ -107,6 +109,37 @@ class CreateArticleAPIView(RetrieveUpdateAPIView):
         return Response(data, status=status.HTTP_201_CREATED)
 
 
+class ListAuthArticlesAPIView(ListAPIView):
+
+    permission_classes = (IsAuthenticated,)
+    renderer_classes = (ListArticlesJSONRenderer,)
+    serializer_class = CreateArticleAPIViewSerializer
+
+    def get_queryset(self):
+
+        user_data = JWTAuthentication().authenticate(self.request)
+        articles = Article.objects.filter(author=user_data[0].id,
+                                          published=True)
+        if len(articles) == 0:
+            raise ArticlesNotExist
+        return articles
+
+
+class ListArticlesAPIView(ListAPIView):
+
+    permission_classes = (AllowAny,)
+    renderer_classes = (ListArticlesJSONRenderer,)
+    serializer_class = CreateArticleAPIViewSerializer
+
+    def get_queryset(self):
+
+        articles = Article.objects.filter(published=True)
+
+        if len(articles) == 0:
+            raise ArticlesNotExist
+        return articles
+
+
 class RateArticleAPIView(RetrieveUpdateAPIView):
     permission_classes = (IsAuthenticated,)
     renderer_classes = (RatingJSONRenderer,)
@@ -122,7 +155,7 @@ class RateArticleAPIView(RetrieveUpdateAPIView):
         user_data = JWTAuthentication().authenticate(request)
 
         # get id of the user rating an article
-        Rating["user_id"] = user_data[1]
+        Rating["author"] = user_data[1]
 
         # Notice here that we do not call `serializer.save()` like we did for
         # the registration endpoint. This is because we don't actually have
@@ -229,7 +262,7 @@ class LikeArticleAPIView(RetrieveUpdateDestroyAPIView):
 
         user_data = JWTAuthentication().authenticate(request)
 
-        like["user_id"] = user_data[1]
+        like["author"] = user_data[1]
 
         like["article_id"] = article_id
 
@@ -253,7 +286,7 @@ class LikeArticleAPIView(RetrieveUpdateDestroyAPIView):
 
         user_data = JWTAuthentication().authenticate(request)
 
-        like["user_id"] = user_data[1]
+        like["author"] = user_data[1]
 
         like["article_id"] = article_id
 
@@ -277,7 +310,7 @@ class LikeArticleAPIView(RetrieveUpdateDestroyAPIView):
 
         user_data = JWTAuthentication().authenticate(request)
 
-        serializer_data["user_id"] = user_data[1]
+        serializer_data["author"] = user_data[1]
         serializer_data["article_id"] = article_id
 
         serializer = self.serializer_class(
@@ -308,7 +341,7 @@ class FavouriteArticleAPIView(CreateAPIView):
 
         user_data = JWTAuthentication().authenticate(request)
 
-        like["user_id"] = user_data[1]
+        like["author"] = user_data[1]
 
         like["article_id"] = article_id
 
@@ -330,7 +363,7 @@ class FavouriteArticleAPIView(CreateAPIView):
 
         user_data = JWTAuthentication().authenticate(request)
 
-        serializer_data["user_id"] = user_data[1]
+        serializer_data["author"] = user_data[1]
         serializer_data["article_id"] = article_id
 
         serializer = self.serializer_class(

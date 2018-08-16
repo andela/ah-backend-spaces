@@ -53,7 +53,7 @@ class Rating(models.Model):
     article_id = models.ForeignKey(Article, on_delete=models.CASCADE)
 
     # this enables us know which user rated the article
-    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
 
     # this takes the time stamp of when an article was rated
     created_at = models.DateTimeField(auto_now_add=True)
@@ -117,7 +117,7 @@ class ArticleLikes(models.Model):
     article_like = models.BooleanField(db_index=True, default=None)
 
     # this takes in th user id of the user who has liked
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
 
     # time stamp of when the article was first liked at
     article_liked_at = models.DateTimeField(auto_now_add=True)
@@ -138,7 +138,7 @@ class ArticleFavourites(models.Model):
     article_favourite = models.BooleanField(db_index=True, default=None)
 
     # this takes in th user id of the user who has favourited the article
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
 
     # time stamp of when the article was favourited at
     article_favourited_at = models.DateTimeField(auto_now_add=True)
