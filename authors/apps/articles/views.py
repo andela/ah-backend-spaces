@@ -1,4 +1,4 @@
-from rest_framework import status
+from rest_framework import status, exceptions
 from rest_framework.generics import (
     RetrieveUpdateAPIView, CreateAPIView,
     RetrieveUpdateDestroyAPIView, ListAPIView
@@ -6,11 +6,13 @@ from rest_framework.generics import (
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
 from django.template.defaultfilters import slugify
 import uuid
 from ..authentication.backends import JWTAuthentication
 from ..authentication.models import User
 from . models import Rating as DbRating, Article
+from .exceptions import NoResultsMatch
 
 from .exceptions import ArticlesNotExist
 from .renderers import (
@@ -24,6 +26,7 @@ from .serializers import (
     LikeArticleAPIViewSerializer, FavouriteArticleAPIViewSerializer,
     UpdateArticleAPIViewSerializer
 )
+import re
 
 
 class CreateArticleAPIView(RetrieveUpdateAPIView):
@@ -373,3 +376,35 @@ class FavouriteArticleAPIView(CreateAPIView):
         result = serializer.perform_delete(serializer_data)
 
         return Response(result, status=status.HTTP_200_OK)
+
+
+class ArticlesSearchFeed(ListAPIView):
+
+    serializer_class = CreateArticleAPIViewSerializer
+    renderer_classes = (ListArticlesJSONRenderer,)
+
+    def get_queryset(self):
+        queryset = Article.objects.all()
+
+        title = self.request.query_params.get('title', None)
+        if title is not None:
+            title = re.sub(' +', ' ', title)
+            queryset = queryset.filter(title__icontains=title)
+
+        author = self.request.query_params.get('author', None)
+        if author is not None:
+            queryset = queryset.filter(author__username__icontains=author)
+
+        tag = self.request.query_params.get('tag', None)
+        if tag is not None:
+            new_q = []
+            for article in queryset:
+                for a_tag in article.tags.all():
+                    if str(a_tag) == tag:
+                        new_q.append(article)
+            queryset = new_q
+
+        if len(queryset) <= 0:
+            raise NoResultsMatch
+
+        return queryset

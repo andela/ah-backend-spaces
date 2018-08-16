@@ -3,7 +3,7 @@ from django.urls import path
 from .views import (
     CreateArticleAPIView, RateArticleAPIView, CommentArticleAPIView,
     LikeArticleAPIView, FavouriteArticleAPIView, ListAuthArticlesAPIView,
-    ListArticlesAPIView
+    ListArticlesAPIView, ArticlesSearchFeed
 )
 
 urlpatterns = [
@@ -16,4 +16,9 @@ urlpatterns = [
     path('articles/<int:article_id>/favourite/',
          FavouriteArticleAPIView.as_view()),
     path('articles/<int:article_id>/likes/', LikeArticleAPIView.as_view()),
+    path('articles/<int:article_id>/', LikeArticleAPIView.as_view()),
+    path('articles/<int:article_id>/favourite/',
+         FavouriteArticleAPIView.as_view()),
+
+    path('articles/search', ArticlesSearchFeed.as_view())
 ]

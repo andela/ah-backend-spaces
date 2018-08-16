@@ -11,10 +11,21 @@ class BaseTest(TestCase):
     def setUp(self):
         """ automatically run the function before running other tests"""
         self.test_client = Client()
+        self.title = "hahahhaha hahaha hahah ahhah"
+
+        self.tags = ["reactjs", "angularjs", "dragons"]
+        self.article_with_tags = {
+            "article": {
+                "title": "How to train your dragon",
+                "description": "Ever wonder how?",
+                "body": "You have to believe",
+                "tags": self.tags
+            }
+        }
 
         self.article_to_create = {
             "article": {
-                "title": "hahahhaha hahaha hahah ahhah",
+                "title": self.title,
                 "body": "<p>this is a body that is here hahahhahaha\n </p>",
                 "description": "this is another article hahahhaha"
             }
@@ -98,8 +109,9 @@ class BaseTest(TestCase):
         }
 
         # Create a verified user
+        self.username = 'Aurthurs'
         johndoe_user = User.objects.create_user(
-            'Aurthurs3', 'haven.authors@gmail.com', 'jakejake@20AA')
+            self.username, 'haven.authors@gmail.com', 'jakejake@20AA')
         johndoe_user.is_verified = True
         johndoe_user.save()
 
@@ -110,8 +122,10 @@ class BaseTest(TestCase):
 
         self.user_logged_in = self.login_user(self.user_to_login)
         self.user_2_logged_in = self.login_user(self.user_to_login2)
-        self.create_article = self.create_an_article(self.user_logged_in)
-        self.own_article = self.create_an_article(self.user_2_logged_in)
+        self.create_article = self.create_an_article(
+            self.article_to_create, self.user_logged_in)
+        self.own_article = self.create_an_article(
+            self.article_to_create, self.user_2_logged_in)
 
         # create a notification for the test user
         alert = Notifications.objects.create(
@@ -150,7 +164,7 @@ class BaseTest(TestCase):
             "/api/users/login/", data=json.dumps(user_details_dict),
             content_type='application/json')
 
-    def create_an_article(self, article_owner):
+    def create_an_article(self, article, article_owner):
         # log the user in to get auth token
         response = article_owner
 
@@ -163,7 +177,7 @@ class BaseTest(TestCase):
         # send a request to create an article
         return self.test_client.post(
             "/api/articles/", **headers,
-            data=json.dumps(self.article_to_create), content_type='application/json')
+            data=json.dumps(article), content_type='application/json')
 
     def update_an_article(self, article_owner):
         # log the user in to get auth token
@@ -360,3 +374,29 @@ class TestCommentingOnArtilces(BaseTest):
         self.assertEqual(
             response.json()['errors']['body'], [
                 'A comment cannot be more than 8000 characters including spaces.'])
+
+    def test_search_articles_by_title(self):
+        """ test for a successful search for article by title"""
+        response = self.test_client.get(
+            "/api/articles/search?title={}".format(self.title), content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+
+    def test_search_articles_by_author(self):
+        """ test for a successful search for articles by author"""
+        response = self.test_client.get(
+            "/api/articles/search?author={}".format(self.username), content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+
+    def test_search_articles_by_tag(self):
+        """ test for a successful search for articles by a tag"""
+        self.create_an_article(self.article_with_tags, self.user_logged_in)
+        response = self.test_client.get(
+            "/api/articles/search?tag={}".format(self.tags[0]), content_type='application/json')
+        self.assertEqual(response.status_code, 200)
+
+    def test_search_articles_return_with_an_empty_query_set(self):
+        """ test for a successful search for articles by a non exisiting tag"""
+        self.create_an_article(self.article_with_tags, self.user_logged_in)
+        response = self.test_client.get(
+            "/api/articles/search?tag={}".format("someraretag"), content_type='application/json')
+        self.assertEqual(response.status_code, 400)
