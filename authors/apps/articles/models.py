@@ -82,6 +82,8 @@ class Comments(models.Model):
     # This takes the time stamp of when the article's comment was updated
     updated_at = models.DateTimeField(auto_now=True)
 
+    objects = models.Manager()
+
 
 class ChildComment(models.Model):
 
