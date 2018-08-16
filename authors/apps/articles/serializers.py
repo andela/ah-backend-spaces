@@ -3,6 +3,7 @@ from django.contrib.auth import authenticate
 from rest_framework import serializers
 
 from ..authentication.models import User
+
 from taggit_serializer.serializers import TagListSerializerField, TaggitSerializer
 from .models import (
     Article, Rating, Comments, ChildComment, ArticleLikes,
@@ -11,6 +12,7 @@ from .models import (
 from ..notifications.models import Notifications
 from ..profiles.models import Profile
 import re
+from authors.apps.profiles.serializers import ProfileSerializer
 
 
 class CreateArticleAPIViewSerializer(TaggitSerializer, serializers.ModelSerializer):
@@ -19,9 +21,11 @@ class CreateArticleAPIViewSerializer(TaggitSerializer, serializers.ModelSerializ
     author = serializers.SerializerMethodField()
     user_id = User.pk
 
-    def get_author(self, user_object):
+    def get_author(self, article):
         user = {
-            "username": user_object.author.username,
+            "username": article.author.username,
+            "bio": article.author.profile.bio,
+            "image": article.author.profile.image
         }
 
         return user
@@ -141,7 +145,7 @@ class RatingArticleAPIViewSerializer(serializers.ModelSerializer):
         # List all of the fields that could possibly be included in a request
         # or response, including fields specified explicitly above.
         # return a success message on succeesful registration
-        fields = ['rating', 'review', 'article_id', 'user_id']
+        fields = ['rating', 'review', 'article_id', 'author']
 
     def validate_rating(self, rating_var):
         if not re.match("[1-5]", rating_var):
@@ -151,7 +155,7 @@ class RatingArticleAPIViewSerializer(serializers.ModelSerializer):
         return rating_var
 
     def validate(self, data):
-        user_id = data.get('user_id', None)
+        user_id = data.get('author', None)
         article_id = data.get('article_id', None)
 
         # get user id of author of article
@@ -164,7 +168,7 @@ class RatingArticleAPIViewSerializer(serializers.ModelSerializer):
 
         # check if user has rated that article before
         db_rating = Rating.objects.filter(
-            article_id=article_id.pk, user_id=user_id)
+            article_id=article_id.pk, author_id=user_id)
         if db_rating.exists():
             raise serializers.ValidationError(
                 "You cannot rate an article twice."
@@ -224,7 +228,7 @@ class ChildCommentSerializer(serializers.ModelSerializer):
 class LikeArticleAPIViewSerializer(serializers.ModelSerializer):
 
     article_like = serializers.BooleanField()
-    user_id = serializers.IntegerField()
+    author = serializers.IntegerField()
     article_id = serializers.IntegerField()
 
     class Meta:
@@ -232,7 +236,7 @@ class LikeArticleAPIViewSerializer(serializers.ModelSerializer):
         # List all of the fields that could possibly be included in a request
         # or response, including fields specified explicitly above.
         # return a success message on succeesful registration
-        fields = ['article_like', 'user_id', 'article_id']
+        fields = ['article_like', 'author', 'article_id']
 
     def validate_article_id(self, article_id):
         # This method checks if an article with this id exists and raises an
@@ -247,14 +251,14 @@ class LikeArticleAPIViewSerializer(serializers.ModelSerializer):
         # This method checks if a like by the same user exists in the system
         # and returns the result accordingly.Its is used by other methods to
         # check for  the same.
-        user_id = data.get('user_id', None)
+        author = data.get('author', None)
         article_id = data.get('article_id', None)
 
         likes = ArticleLikes.objects.filter(article_id=article_id,
-                                            user_id=user_id
+                                            author_id=author
                                             ).values('id',
                                                      'article_like',
-                                                     'user_id')
+                                                     'author_id')
         if likes.exists():
             return True
         return False
@@ -262,13 +266,13 @@ class LikeArticleAPIViewSerializer(serializers.ModelSerializer):
     def get_data_items(self, data):
         # This method returns adictioanry of values that will be required by
         # other methods.
-        user_id = data.get('user_id', None)
+        author = data.get('author', None)
         article_id = data.get('article_id', None)
         article_like = data.get('article_like', None)
 
         data_items = {
             "article_like": article_like,
-            "user_id": user_id,
+            "author": author,
             "article_id": article_id,
             "status": "like"
         }
@@ -284,12 +288,12 @@ class LikeArticleAPIViewSerializer(serializers.ModelSerializer):
         # user has already liked the article they won't like it again.
         if not self.verify_article_exists(data):
             item = self.get_data_items(data)
-            like = ArticleLikes(user_id=item['user_id'], article_id=item['article_id'],
+            like = ArticleLikes(author_id=item['author'], article_id=item['article_id'],
                                 article_like=item['article_like'])
             like.save()
             return {
                 "article_like": like.article_like,
-                "user_id": item['user_id'],
+                "author": item['author'],
                 "article_id": item['article_id'],
                 "message": 'You have provided a {} for the article'.format(item['status'])
             }
@@ -307,12 +311,12 @@ class LikeArticleAPIViewSerializer(serializers.ModelSerializer):
         else:
             item = self.get_data_items(data)
             like_update = ArticleLikes.objects.filter(article_id=item['article_id'],
-                                                      user_id=item['user_id']
+                                                      author_id=item['author']
                                                       )
             like_update.update(article_like=item['article_like'])
             return {
                 "article_like": item['article_like'],
-                "user_id": item['user_id'],
+                "author": item['author'],
                 "article_id": item['article_id'],
                 "status": "You have updated to {} the article".format(item['status'])
             }
@@ -326,11 +330,11 @@ class LikeArticleAPIViewSerializer(serializers.ModelSerializer):
         else:
             item = self.get_data_items(data)
             ArticleLikes.objects.filter(article_id=item['article_id'],
-                                        user_id=item['user_id']
+                                        author_id=item['author']
                                         ).delete()
             return {
                 "article_like": None,
-                "user_id": item['user_id'],
+                "author": item['author'],
                 "article_id": item['article_id'],
                 'status': "Your opinion has been deleted from article likes"
             }
@@ -339,7 +343,7 @@ class LikeArticleAPIViewSerializer(serializers.ModelSerializer):
 class FavouriteArticleAPIViewSerializer(serializers.ModelSerializer):
 
     article_favourite = serializers.BooleanField()
-    user_id = serializers.IntegerField()
+    author = serializers.IntegerField()
     article_id = serializers.IntegerField()
 
     class Meta:
@@ -347,7 +351,7 @@ class FavouriteArticleAPIViewSerializer(serializers.ModelSerializer):
         # List all of the fields that could possibly be included in a request
         # or response, including fields specified explicitly above.
         # return a success message on succeesful registration
-        fields = ['article_favourite', 'user_id', 'article_id']
+        fields = ['article_favourite', 'author', 'article_id']
 
     def validate_article_id(self, article_id):
         # This method checks if an article with this id exists and raises an
@@ -362,14 +366,14 @@ class FavouriteArticleAPIViewSerializer(serializers.ModelSerializer):
         # This method checks if an article has already been favourited by the
         # same user and return the result accordingly. Its is used by other
         # methods to check for  the same.
-        user_id = data.get('user_id', None)
+        author = data.get('author', None)
         article_id = data.get('article_id', None)
 
         likes = ArticleFs.objects.filter(article_id=article_id,
-                                         user_id=user_id
+                                         author_id=author
                                          ).values('id',
                                                   'article_favourite',
-                                                  'user_id')
+                                                  'author_id')
         if likes.exists():
             return True
         return False
@@ -377,13 +381,13 @@ class FavouriteArticleAPIViewSerializer(serializers.ModelSerializer):
     def get_data_items(self, data):
         # This method returns adictioanry of values that will be required by
         # other methods.
-        user_id = data.get('user_id', None)
+        author = data.get('author', None)
         article_id = data.get('article_id', None)
         article_favourite = data.get('article_favourite', None)
 
         data_items = {
             "article_favourite": article_favourite,
-            "user_id": user_id,
+            "author": author,
             "article_id": article_id,
             "status": "article added to "
         }
@@ -406,13 +410,13 @@ class FavouriteArticleAPIViewSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 "You have already added this article in your favourites list")
         else:
-            like = ArticleFs(user_id=item['user_id'],
+            like = ArticleFs(author_id=item['author'],
                              article_id=item['article_id'],
                              article_favourite=item['article_favourite'])
             like.save()
             return {
                 "article_favourite": like.article_favourite,
-                "user_id": item['user_id'],
+                "author": item['author'],
                 "article_id": item['article_id'],
                 "message": "{} your list of favourite articles".format(
                     item['status'])
@@ -431,7 +435,7 @@ class FavouriteArticleAPIViewSerializer(serializers.ModelSerializer):
                 "Use false to remove article from your favourites list")
         else:
             ArticleFs.objects.filter(article_id=item['article_id'],
-                                     user_id=item['user_id']
+                                     author_id=item['author']
                                      ).delete()
             return {
                 "message": "article removed from your list favourites articles"
