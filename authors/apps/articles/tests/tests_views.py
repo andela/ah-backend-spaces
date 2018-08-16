@@ -94,6 +94,19 @@ class BaseTest(TestCase):
             }
         }
 
+        self.comment_update_greater_than_8000 = {
+            "comment": {
+                "body": "H" * 80000,
+            }
+        }
+
+        self.child_comment_update_greater_than_8000 = {
+            "comment": {
+                "body": "H" * 80000,
+                "parent_id": 1
+            }
+        }
+
         # this is a list of notifications to mart as read
         self.mark_as_read = {
             "notification": {
@@ -152,6 +165,32 @@ class BaseTest(TestCase):
         self.longer_than_8000_comment = self.comment_on_article(
             self.longer_than_8000_comment_body)
 
+        # update a comment
+        self.update_a_comment = self.update_comment(
+            self.comment_to_create
+        )
+
+        # update a child comment
+        self.update_child_comment = self.update_comment(
+            self.comment_as_thread_of_another
+        )
+
+        # very long child comment body
+        self.update_long_child_comment = self.update_comment(
+            self.child_comment_update_greater_than_8000
+        )
+
+        # very long parent comment body
+        self.update_long_parent_comment = self.update_comment(
+            self.comment_update_greater_than_8000
+        )
+
+        # delete a comment
+        self.delete_a_comment = self.delete_comment()
+
+        # delete non_existent_comment
+        self.delete_non_exitent_comment = self.delete_comment()
+
     def login_user(self, user_details_dict):
         """Authenticate the user credentials and login
 
@@ -208,6 +247,35 @@ class BaseTest(TestCase):
         return self.test_client.post(
             "/api/articles/1/comment/", **headers,
             data=json.dumps(comment), content_type='application/json')
+
+    def update_comment(self, comment):
+        # log the user in to get auth token
+        response = self.user_logged_in
+
+        # extrct token from response
+        token = response.json()['user']['token']
+
+        # generate an HTTP header with token
+        headers = {'HTTP_AUTHORIZATION': 'Token ' + token}
+
+        # send a request to update an article
+        return self.test_client.put(
+            "/api/articles/1/comment/", **headers,
+            data=json.dumps(comment), content_type='application/json')
+
+    def delete_comment(self):
+        # log the user in to get auth token
+        response = self.user_logged_in
+
+        # extrct token from response
+        token = response.json()['user']['token']
+
+        # generate an HTTP header with token
+        headers = {'HTTP_AUTHORIZATION': 'Token ' + token}
+
+        # send a request to update an article
+        return self.test_client.delete(
+            "/api/articles/1/comment/", **headers)
 
     def follow_a_user(self):
         # follow a user
@@ -400,3 +468,59 @@ class TestCommentingOnArtilces(BaseTest):
         response = self.test_client.get(
             "/api/articles/search?tag={}".format("someraretag"), content_type='application/json')
         self.assertEqual(response.status_code, 400)
+
+    def test_update_comment(self):
+        response = self.update_a_comment
+
+        #  perform test case test
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(
+            response.json()['comment']['message'], 'Comment updated successfully.')
+
+    def test_update_child_comment(self):
+        response = self.update_child_comment
+
+        #  perform test case test
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(
+            response.json()['comment']['message'], 'Comment updated successfully.')
+
+    def test_child_comment_body_long(self):
+        """ test if a comment body can be longer than 8000 characters on update"""
+
+        response = self.update_long_child_comment
+
+        #  perform test case test
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.json()['errors']['body'], [
+                'A comment cannot be more than 8000 characters including spaces.'])
+
+    def test_parent_comment_body_long(self):
+        """ test if a comment body can be longer than 8000 characters on update"""
+
+        response = self.update_long_parent_comment
+
+        #  perform test case test
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.json()['errors']['body'], [
+                'A comment cannot be more than 8000 characters including spaces.'])
+
+    def test_delete_comment(self):
+        """ test if a comment body can be longer than 8000 characters on update"""
+
+        response = self.delete_a_comment
+
+        #  perform test case test
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json()['comment']['message'], 'Comment deleted succesfully.')
+
+    def test_delete_non_existing_comment(self):
+        response = self.delete_non_exitent_comment
+
+        #  perform test case test
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(
+            response.json()['comment']['error'], 'The comment id was not found')

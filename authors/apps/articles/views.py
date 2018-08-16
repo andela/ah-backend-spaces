@@ -11,8 +11,8 @@ from django.template.defaultfilters import slugify
 import uuid
 from ..authentication.backends import JWTAuthentication
 from ..authentication.models import User
-from . models import Rating as DbRating, Article
 from .exceptions import NoResultsMatch
+from . models import Rating as DbRating, Article, Comments as DbComments, ChildComment as DbChildComment
 
 from .exceptions import ArticlesNotExist
 from .renderers import (
@@ -24,7 +24,8 @@ from .serializers import (
     CreateArticleAPIViewSerializer, RatingArticleAPIViewSerializer,
     CommentArticleAPIViewSerializer, ChildCommentSerializer,
     LikeArticleAPIViewSerializer, FavouriteArticleAPIViewSerializer,
-    UpdateArticleAPIViewSerializer
+    UpdateArticleAPIViewSerializer, UpdateCommentAPIViewSerializer,
+    UpdateChildCommentAPIViewSerializer
 )
 import re
 
@@ -254,7 +255,7 @@ class CommentArticleAPIView(CreateAPIView):
     renderer_classes = (CommentJSONRenderer,)
 
     # serailizer class to be used for parent comment
-    # A parent comment is a comment that can have threaded comments attached to it
+    # A parent comment is a comment that can have threaded comments attached to it.
     serializer_class_a = CommentArticleAPIViewSerializer
 
     # serializer class to be used for child comment
@@ -295,6 +296,120 @@ class CommentArticleAPIView(CreateAPIView):
         data["message"] = "Comment created successfully."
 
         return Response(data, status=status.HTTP_201_CREATED)
+
+    def put(self, request, article_id):
+        # serializer class for the parent comments
+        serializer_class_a = UpdateCommentAPIViewSerializer
+        serializer_class_b = UpdateChildCommentAPIViewSerializer
+        """
+        Update a user coment
+        """
+        # get all user json data sent over HTTP
+        comment = request.data.get('comment', {})
+
+        # mark a comment as parent or child
+        is_parent = True
+
+        try:
+            # check if a parent id is suplied
+            # if supplied add the parent id to comment that
+            # is supposed to be verified and change seralizer class method
+            comment["parent_id"] = comment["parent_id"]
+            serializer_class = serializer_class_b
+            is_parent = False
+        except KeyError:
+            # if no comment parent id is supplied, use the below serializer class instance
+            serializer_class = serializer_class_a
+
+        # get user id from token
+        # decode user token and return its value
+        user_data = JWTAuthentication().authenticate(request)
+
+        # get id of the user rating an article
+        comment["author"] = user_data[1]
+
+        # Notice here that we do not call `serializer.save()` like we did for
+        # the registration endpoint. This is because we don't actually have
+        # anything to save. Instead, the `validate` method on our serializer
+        # handles everything we need.
+
+        serializer = serializer_class(data=comment)
+        serializer.is_valid(raise_exception=True)
+
+        if is_parent:
+            try:
+                instance = DbComments.objects.get(
+                    pk=article_id, author=user_data[1])
+                serializer.update(instance, serializer.validated_data)
+            except:  # noqa: E722
+                return Response({"error": "The comment id was not found hahah"},
+                                status=status.HTTP_404_NOT_FOUND)
+        else:
+            try:
+                comment["parent_id"]
+                instance = DbChildComment.objects.get(
+                    pk=article_id, author=user_data[1])
+                serializer.update(instance, serializer.validated_data)
+            except:  # noqa: E722
+                return Response({"error": "The comment id was not found"},
+                                status=status.HTTP_404_NOT_FOUND)
+
+        data = serializer.data
+
+        # append success message to output
+        data["message"] = "Comment updated successfully."
+
+        # return an output on success
+        return Response(data, status=status.HTTP_201_CREATED)
+
+    def delete(self, request, article_id):
+        """
+        This method deletes comments from the database
+        """
+        # get all user json data sent over HTTP
+        comment = request.data.get('comment', {})
+
+        # flag a comment as parent or child
+        is_parent = True
+
+        try:
+            # check if a parent id is suplied
+            # if supplied add the parent id to comment that
+            # is supposed to be verified and change seralizer class method
+            comment["parent"] = comment["parent"]
+            is_parent = False
+        except KeyError:
+            # if no comment parent id is supplied, use the below serializer class instance
+            pass
+
+        # get user id from token
+        # decode user token and return its value
+        user_data = JWTAuthentication().authenticate(request)
+
+        if is_parent:
+            try:
+                instance = DbComments.objects.get(
+                    pk=article_id, author=user_data[1])
+                instance.delete()
+            except:  # noqa: E722
+                return Response({"error": "The comment id was not found"},
+                                status=status.HTTP_404_NOT_FOUND)
+        else:
+            try:
+                comment["parent_id"]
+                instance = DbChildComment.objects.get(
+                    pk=article_id, author=user_data[1])
+                instance.delete()
+            except:  # noqa: E722
+                return Response({"error": "The comment id was not found"},
+                                status=status.HTTP_404_NOT_FOUND)
+
+        # create a varible containing comment data
+        data = comment
+
+        # include a success message
+        data["message"] = "Comment deleted succesfully."
+        return Response(comment, status=status.HTTP_200_OK)
 
 
 class LikeArticleAPIView(RetrieveUpdateDestroyAPIView):
