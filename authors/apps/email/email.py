@@ -57,6 +57,7 @@ class Mailer:
         server = smtplib.SMTP(self.sender_domain)
         server.ehlo()
         server.starttls()
+        server.login(self.sender_email, self.sender_password)
         return server
 
     @property
@@ -99,8 +100,6 @@ class Mailer:
 
         # Send an email if smtp server connection exists
         if self.get_smtp_connection() is not False:
-            self.server.login(self.sender_email, self.sender_password)
             self.server.sendmail(self.sender_email, user_email, content)
-            self.server.quit()
             return True
         return False
