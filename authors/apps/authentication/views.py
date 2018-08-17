@@ -179,13 +179,18 @@ class ResetPasswordAPIView(APIView):
             'token': self.token_class.make_custom_token(user_data)
         }
 
-        # send the user an email on successful registration
-        self.send_user_email.send(
+        # Check if an email was sent successfully and return statuses
+        # accordingly.
+        is_email_sent = self.send_user_email.send(
             serializer.data['email'], subject, template_name, context)
 
-        message = {"message": "A password reset link has been sent " +
-                   user["email"] + ", please check your email"}
-        return Response(message, status=status.HTTP_200_OK)
+        if is_email_sent:
+            message = {"message": "A password reset link has been sent " +
+                       user["email"] + ", please check your email"}
+            return Response(message, status=status.HTTP_200_OK)
+
+        return Response({"error": "Connection to smtp server failed"},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class UpdatePasswordAPIView(APIView):
