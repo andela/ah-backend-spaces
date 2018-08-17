@@ -29,9 +29,9 @@ from .serializers import (
 class CreateArticleAPIView(RetrieveUpdateAPIView):
     permission_classes = (IsAuthenticated,)
     renderer_classes = (ArticlesJSONRenderer,)
+    serializer_class = CreateArticleAPIViewSerializer
 
     def post(self, request):
-        serializer_class = CreateArticleAPIViewSerializer
         """
         This class method is used to create user articles
         """
@@ -55,7 +55,7 @@ class CreateArticleAPIView(RetrieveUpdateAPIView):
         # anything to save. Instead, the `validate` method on our serializer
         # handles everything we need.
 
-        serializer = serializer_class(data=article)
+        serializer = self.serializer_class(data=article)
         serializer.is_valid(raise_exception=True)
         serializer.save(author=user_data[0])
         data = serializer.data
@@ -108,6 +108,23 @@ class CreateArticleAPIView(RetrieveUpdateAPIView):
 
         return Response(data, status=status.HTTP_201_CREATED)
 
+    def get(self, request, article_id):
+        """
+        This class method is used to fetch a users article by id
+        """
+
+        # create an instance of article model class from article id
+        # gotten from the url paresd.
+        try:
+            article = Article.objects.get(pk=article_id, published=True)
+        except Article.DoesNotExist:
+            return Response({"error": "This article doesnot exist"},
+                            status=status.HTTP_404_NOT_FOUND)
+
+        serializer = self.serializer_class(article)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 
 class ListAuthArticlesAPIView(ListAPIView):
 
@@ -118,8 +135,7 @@ class ListAuthArticlesAPIView(ListAPIView):
     def get_queryset(self):
 
         user_data = JWTAuthentication().authenticate(self.request)
-        articles = Article.objects.filter(author=user_data[0].id,
-                                          published=True)
+        articles = Article.objects.filter(author=user_data[0].id,)
         if len(articles) == 0:
             raise ArticlesNotExist
         return articles
@@ -138,6 +154,27 @@ class ListArticlesAPIView(ListAPIView):
         if len(articles) == 0:
             raise ArticlesNotExist
         return articles
+
+
+class ListArticleAPIView(RetrieveUpdateAPIView):
+
+    permission_classes = (AllowAny,)
+    renderer_classes = (ListArticlesJSONRenderer,)
+    serializer_class = CreateArticleAPIViewSerializer
+
+    def get(self, request, article_id):
+
+        # create an instance of article model class from article id
+        # gotten from the url paresd.
+        try:
+            article = Article.objects.get(pk=article_id, published=True)
+        except Article.DoesNotExist:
+            return Response({"error": "This article doesnot exist"},
+                            status=status.HTTP_404_NOT_FOUND)
+
+        serializer = self.serializer_class(article)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class RateArticleAPIView(RetrieveUpdateAPIView):
