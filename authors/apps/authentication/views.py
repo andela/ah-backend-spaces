@@ -62,12 +62,9 @@ class RegistrationAPIView(APIView):
         # Attempt to send an email and check if email was sent successfully
         # then save data to the database. The expression returns true if the
         # message was sent successfully.
-        if settings.SENDING_MAIL is True:
-            is_email_sent = self.send_user_email.send(
-                serializer.validated_data["email"], subject, template_name,
-                context)
-        else:
-            is_email_sent = True
+        is_email_sent = self.send_user_email.send(
+            serializer.validated_data["email"], subject, template_name,
+            context)
 
         if is_email_sent:
             serializer.save()
